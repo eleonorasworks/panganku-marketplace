@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>PanganKu - Marketplace Lokal Indonesia</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -18,16 +18,59 @@
     }
   </script>
   <style>
-    * { scroll-behavior: smooth; }
-    .product-card { transition: all 0.2s ease; cursor: pointer; }
-    .product-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -12px rgba(0,0,0,0.15); }
+    /* Dropdown yang stabil - TIDAK ILANG SAAT DIKLIK */
+    .dropdown-container {
+      position: relative;
+      display: inline-block;
+    }
+    .dropdown-menu {
+      position: absolute;
+      right: 0;
+      top: 100%;
+      margin-top: 8px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      min-width: 220px;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+      transform: translateY(-10px);
+    }
+    .dropdown-container:hover .dropdown-menu,
+    .dropdown-container:focus-within .dropdown-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .dropdown-menu button {
+      width: 100%;
+      text-align: left;
+      padding: 12px 16px;
+      transition: background 0.2s;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      color: #374151;
+    }
+    .dropdown-menu button:hover {
+      background: #E8F5E9;
+    }
+    .dropdown-menu button:first-child {
+      border-radius: 12px 12px 0 0;
+    }
+    .dropdown-menu button:last-child {
+      border-radius: 0 0 12px 12px;
+      color: #dc2626;
+    }
+    .product-card { transition: all 0.3s ease; cursor: pointer; }
+    .product-card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 25px 40px -12px rgba(0,0,0,0.2); }
     .toast-notif { animation: slideIn 0.3s ease; position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f1f1; }
-    ::-webkit-scrollbar-thumb { background: #2E7D32; border-radius: 10px; }
-    .badge-new { animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+    @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+    .animate-float { animation: float 3s ease-in-out infinite; }
   </style>
 </head>
 <body class="font-inter antialiased bg-gray-50">
@@ -35,7 +78,7 @@
 <div id="app"></div>
 
 <script>
-  // ========== DATABASE LENGKAP DENGAN BANYAK PRODUK ==========
+  // ========== DATABASE LENGKAP ==========
   let currentUser = JSON.parse(localStorage.getItem('panganku_user') || 'null');
   let users = JSON.parse(localStorage.getItem('panganku_users') || '[]');
   let products = JSON.parse(localStorage.getItem('panganku_products') || '[]');
@@ -45,7 +88,6 @@
   let notifications = JSON.parse(localStorage.getItem('panganku_notifications') || '[]');
   let addresses = JSON.parse(localStorage.getItem('panganku_addresses') || '[]');
   let vouchers = JSON.parse(localStorage.getItem('panganku_vouchers') || '[]');
-  let productReviews = JSON.parse(localStorage.getItem('panganku_reviews') || '[]');
 
   function saveAll() {
     localStorage.setItem('panganku_users', JSON.stringify(users));
@@ -56,68 +98,46 @@
     localStorage.setItem('panganku_notifications', JSON.stringify(notifications));
     localStorage.setItem('panganku_addresses', JSON.stringify(addresses));
     localStorage.setItem('panganku_vouchers', JSON.stringify(vouchers));
-    localStorage.setItem('panganku_reviews', JSON.stringify(productReviews));
     if (currentUser) localStorage.setItem('panganku_user', JSON.stringify(currentUser));
     else localStorage.removeItem('panganku_user');
   }
 
-  // Format Rupiah dengan 2 digit di belakang koma
   function formatRupiah(amount) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
   }
 
-  function addNotif(userId, title, message, type = 'info') {
-    const newNotif = { id: Date.now(), userId, title, message, type, read: false, createdAt: new Date().toISOString() };
-    notifications.unshift(newNotif);
+  function addNotif(userId, title, message) {
+    notifications.unshift({ id: Date.now(), userId, title, message, read: false, createdAt: new Date().toISOString() });
     saveAll();
-    // Jika user sedang aktif, trigger update UI notifikasi badge secara realtime
-    if (currentUser && currentUser.id === userId) {
-      updateNotifBadge();
-      showToastNotif(title, message);
-    }
+    if (currentUser && currentUser.id === userId) updateNotifBadge();
   }
-  
-  function showToastNotif(title, message) {
-    const toast = document.createElement('div');
-    toast.className = 'toast-notif bg-primary text-white px-4 py-3 rounded-xl shadow-lg max-w-sm';
-    toast.innerHTML = `<div class="font-bold">${title}</div><div class="text-sm opacity-90">${message}</div>`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
-  }
-  
-  function updateNotifBadge() {
-    const badge = document.getElementById('notifBadgeCount');
-    if (badge) {
-      const unreadCount = notifications.filter(n => n.userId === currentUser?.id && !n.read).length;
-      badge.textContent = unreadCount;
-      badge.classList.toggle('hidden', unreadCount === 0);
-    }
-  }
-  
-  function markNotifRead(notifId) {
-    const notif = notifications.find(n => n.id === notifId);
-    if (notif) notif.read = true;
-    saveAll();
-    updateNotifBadge();
-  }
-  
+
   function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = `toast-notif bg-${type === 'success' ? 'primary' : 'accent'} text-white px-6 py-3 rounded-xl shadow-lg`;
-    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} mr-2"></i>${message}`;
+    toast.className = `toast-notif bg-${type === 'success' ? 'primary' : 'accent'} text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2`;
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i> ${message}`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
   }
-  
+
+  function updateNotifBadge() {
+    const badge = document.getElementById('notifBadgeCount');
+    if (badge) {
+      const unread = notifications.filter(n => n.userId === currentUser?.id && !n.read).length;
+      badge.textContent = unread;
+      badge.classList.toggle('hidden', unread === 0);
+    }
+  }
+
   function getCartCount() { return carts.filter(c => c.userId === currentUser?.id).reduce((s, i) => s + i.qty, 0); }
   function isInWishlist(productId) { return wishlists.some(w => w.userId === currentUser?.id && w.productId === productId); }
-  function toggleWishlist(productId) { 
-    const idx = wishlists.findIndex(w => w.userId === currentUser.id && w.productId === productId); 
-    if (idx !== -1) wishlists.splice(idx, 1); 
-    else wishlists.push({ id: Date.now(), userId: currentUser.id, productId }); 
-    saveAll(); 
-    showToast(idx !== -1 ? 'Dihapus dari favorit' : 'Ditambahkan ke favorit', idx !== -1 ? 'info' : 'success'); 
-    renderApp(); 
+  function toggleWishlist(productId) {
+    const idx = wishlists.findIndex(w => w.userId === currentUser.id && w.productId === productId);
+    if (idx !== -1) wishlists.splice(idx, 1);
+    else wishlists.push({ id: Date.now(), userId: currentUser.id, productId });
+    saveAll();
+    showToast(idx !== -1 ? 'Dihapus dari favorit' : 'Ditambahkan ke favorit');
+    renderApp();
   }
 
   function setUser(user) { currentUser = user; saveAll(); renderApp(); }
@@ -126,42 +146,26 @@
   let currentPage = 'landing';
   let regState = { step: 1, role: null, formData: {} };
 
-  // SEED DATA (BANYAK PRODUK)
+  // SEED DATA
   if (users.length === 0) {
     users.push({ id: 1, role: 'buyer', name: 'Budi Santoso', email: 'buyer@panganku.com', password: '123456', phone: '081234567890', avatar: '👨', joinDate: '2024-01-15' });
-    users.push({ id: 2, role: 'seller', name: 'Ibu Dewi', email: 'seller@panganku.com', password: '123456', phone: '082222333444', businessName: 'Dapur Nusantara', avatar: '👩‍🍳', verified: true, joinDate: '2023-12-01' });
-    users.push({ id: 3, role: 'farmer', name: 'Pak Slamet', email: 'farmer@panganku.com', password: '123456', phone: '083333444555', farmName: 'Tani Organik Sejahtera', avatar: '👨‍🌾', verified: true, joinDate: '2023-11-20' });
+    users.push({ id: 2, role: 'seller', name: 'Ibu Dewi', email: 'seller@panganku.com', password: '123456', phone: '082222333444', businessName: 'Dapur Nusantara', avatar: '👩‍🍳', joinDate: '2023-12-01' });
+    users.push({ id: 3, role: 'farmer', name: 'Pak Slamet', email: 'farmer@panganku.com', password: '123456', phone: '083333444555', farmName: 'Tani Organik Sejahtera', avatar: '👨‍🌾', joinDate: '2023-11-20' });
+    addresses.push({ id: 1, userId: 1, label: 'Rumah', recipient: 'Budi Santoso', phone: '081234567890', address: 'Jl. Sudirman No. 123, Jakarta Selatan', isPrimary: true });
+    vouchers.push({ id: 1, code: 'FREEONGKIR', discount: 15000, minPurchase: 75000, type: 'shipping', expiry: '2025-12-31' });
+    vouchers.push({ id: 2, code: 'PANGAN10', discount: 10000, minPurchase: 50000, type: 'product', expiry: '2025-12-31' });
     
-    addresses.push({ id: 1, userId: 1, label: 'Rumah', recipient: 'Budi Santoso', phone: '081234567890', address: 'Jl. Sudirman No. 123, RT 05 RW 03, Kebayoran Baru, Jakarta Selatan 12120', isPrimary: true });
-    addresses.push({ id: 2, userId: 1, label: 'Kantor', recipient: 'Budi Santoso', phone: '081234567890', address: 'Jl. Gatot Subroto Kav 52, Kuningan, Jakarta Selatan 12950', isPrimary: false });
-    
-    vouchers.push({ id: 1, code: 'PANGAN10', discount: 10000, minPurchase: 50000, expiry: '2025-12-31' });
-    vouchers.push({ id: 2, code: 'GRATISONGKIR', discount: 15000, minPurchase: 75000, expiry: '2025-12-31' });
-    
-    // BANYAK PRODUK (20+ produk)
     const productList = [
-      { id: 101, name: 'Paket Sayur Organik Segar', price: 55000, originalPrice: 75000, rating: 4.8, sold: 1234, image: '🥬', category: 'Sayuran', sellerId: 3, sellerName: 'Tani Organik Sejahtera', stock: 50, weight: '2kg', description: 'Paket sayur segar dari petani lokal (bayam 250g, kangkung 250g, sawi 250g, tomat 500g, wortel 500g, cabai 50g). Dipetik setiap pagi!', location: 'Bogor', shippingCost: 10000 },
-      { id: 102, name: 'Nasi Goreng Spesial Homemade', price: 28000, originalPrice: 35000, rating: 4.9, sold: 2512, image: '🍳', category: 'Makanan', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 30, weight: '500g', description: 'Nasi goreng dengan bumbu rempah pilihan, telur, ayam suwir, bakso, dan acar. Pre-order H-1 untuk kualitas terbaik!', location: 'Bandung', shippingCost: 8000 },
-      { id: 103, name: 'Rendang Sapi Padang Asli', price: 65000, originalPrice: 85000, rating: 4.9, sold: 889, image: '🍲', category: 'Makanan', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 25, weight: '350g', description: 'Rendang daging sapi asli Padang, dimasak dengan santan kelapa dan 20 rempah pilihan. Empuk dan bumbu meresap sempurna.', location: 'Bandung', shippingCost: 10000 },
-      { id: 104, name: 'Tomat Cherry Organik', price: 25000, originalPrice: 35000, rating: 4.7, sold: 3456, image: '🍅', category: 'Sayuran', sellerId: 3, sellerName: 'Tani Organik Sejahtera', stock: 100, weight: '500g', description: 'Tomat cherry manis dan segar, cocok untuk lalapan atau jus. Tanpa pestisida, organik bersertifikat.', location: 'Bogor', shippingCost: 8000 },
-      { id: 105, name: 'Kombucha Rempah Kayu Manis', price: 18000, originalPrice: 25000, rating: 4.6, sold: 678, image: '🧃', category: 'Minuman', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 40, weight: '300ml', description: 'Minuman fermentasi probiotik dengan rasa kayu manis dan jahe. Menyegarkan dan menyehatkan pencernaan.', location: 'Bandung', shippingCost: 5000 },
-      { id: 106, name: 'Nasi Uduk Komplit Pre-Order', price: 22000, originalPrice: 30000, rating: 4.8, sold: 1520, image: '🍚', category: 'Makanan', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 15, weight: '1 porsi', description: 'Nasi uduk dengan ayam goreng, tempe orek, telur dadar, sambal, dan kerupuk. Pre-order H-1 ya!', location: 'Bandung', shippingCost: 7000 },
-      { id: 107, name: 'Jeruk Lokal Manis 1kg', price: 18000, originalPrice: 25000, rating: 4.5, sold: 5432, image: '🍊', category: 'Buah', sellerId: 3, sellerName: 'Tani Organik Sejahtera', stock: 200, weight: '1kg', description: 'Jeruk manis segar langsung dari kebun petani lokal. Kaya vitamin C.', location: 'Bogor', shippingCost: 8000 },
-      { id: 108, name: 'Sambal Terasi Uleg', price: 15000, originalPrice: 22000, rating: 4.9, sold: 987, image: '🌶️', category: 'Bumbu', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 50, weight: '200g', description: 'Sambal terasi homemade, diuleg manual dengan cabai pilihan dan terasi berkualitas.', location: 'Bandung', shippingCost: 5000 },
-      { id: 109, name: 'Apel Malang Segar 1kg', price: 35000, originalPrice: 45000, rating: 4.7, sold: 2100, image: '🍎', category: 'Buah', sellerId: 3, sellerName: 'Tani Organik Sejahtera', stock: 80, weight: '1kg', description: 'Apel Malang segar, crunchy dan manis. Langsung dari kebun apel di Batu, Malang.', location: 'Bogor', shippingCost: 10000 },
-      { id: 110, name: 'Pisang Cavendish 1 sisir', price: 28000, originalPrice: 38000, rating: 4.6, sold: 1876, image: '🍌', category: 'Buah', sellerId: 3, sellerName: 'Tani Organik Sejahtera', stock: 120, weight: '1kg', description: 'Pisang Cavendish manis, cocok untuk camilan sehat atau bahan smoothie.', location: 'Bogor', shippingCost: 7000 },
-      { id: 111, name: 'Telur Ayam Kampung 10 butir', price: 32000, originalPrice: 42000, rating: 4.8, sold: 3450, image: '🥚', category: 'Protein', sellerId: 3, sellerName: 'Tani Organik Sejahtera', stock: 60, weight: '500g', description: 'Telur ayam kampung asli, kuningnya kaya dan gurih.', location: 'Bogor', shippingCost: 8000 },
-      { id: 112, name: 'Daging Ayam Fillet 500g', price: 45000, originalPrice: 58000, rating: 4.7, sold: 1234, image: '🍗', category: 'Protein', sellerId: 3, sellerName: 'Tani Organik Sejahtera', stock: 45, weight: '500g', description: 'Daging ayam fillet segar, bebas hormon, siap masak.', location: 'Bogor', shippingCost: 10000 },
-      { id: 113, name: 'Tahu Sumedang 20 pcs', price: 18000, originalPrice: 25000, rating: 4.8, sold: 2345, image: '🥟', category: 'Makanan', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 100, weight: '300g', description: 'Tahu Sumedang gurih, crispy di luar lembut di dalam.', location: 'Bandung', shippingCost: 6000 },
-      { id: 114, name: 'Tempe Bacem Homemade', price: 15000, originalPrice: 20000, rating: 4.7, sold: 876, image: '🍘', category: 'Makanan', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 60, weight: '200g', description: 'Tempe bacem dengan bumbu manis gurih khas Jogja.', location: 'Bandung', shippingCost: 5000 },
-      { id: 115, name: 'Es Dawet Ayu Kemasan', price: 12000, originalPrice: 18000, rating: 4.6, sold: 543, image: '🥤', category: 'Minuman', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 40, weight: '250ml', description: 'Es dawet dengan cendol dan santan yang menyegarkan.', location: 'Bandung', shippingCost: 5000 }
+      { id: 101, name: 'Paket Sayur Organik', price: 55000, originalPrice: 75000, rating: 4.8, sold: 1234, image: '🥬', category: 'Sayuran', sellerId: 3, sellerName: 'Tani Organik', stock: 50, description: 'Sayur segar dari petani lokal', location: 'Bogor', weight: '2kg' },
+      { id: 102, name: 'Nasi Goreng Spesial', price: 28000, originalPrice: 35000, rating: 4.9, sold: 2512, image: '🍳', category: 'Makanan', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 30, description: 'Nasi goreng homemade dengan bumbu rempah', location: 'Bandung', weight: '500g' },
+      { id: 103, name: 'Rendang Sapi Padang', price: 65000, originalPrice: 85000, rating: 4.9, sold: 889, image: '🍲', category: 'Makanan', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 25, description: 'Rendang daging sapi asli Padang', location: 'Bandung', weight: '350g' },
+      { id: 104, name: 'Tomat Cherry', price: 25000, originalPrice: 35000, rating: 4.7, sold: 3456, image: '🍅', category: 'Sayuran', sellerId: 3, sellerName: 'Tani Organik', stock: 100, description: 'Tomat cherry manis, organik', location: 'Bogor', weight: '500g' },
+      { id: 105, name: 'Kombucha Rempah', price: 18000, originalPrice: 25000, rating: 4.6, sold: 678, image: '🧃', category: 'Minuman', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 40, description: 'Minuman probiotik sehat', location: 'Bandung', weight: '300ml' },
+      { id: 106, name: 'Nasi Uduk Komplit', price: 22000, originalPrice: 30000, rating: 4.8, sold: 1520, image: '🍚', category: 'Makanan', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 15, description: 'Nasi uduk dengan ayam goreng, tempe orek', location: 'Bandung', weight: '1 porsi' },
+      { id: 107, name: 'Jeruk Lokal 1kg', price: 18000, originalPrice: 25000, rating: 4.5, sold: 5432, image: '🍊', category: 'Buah', sellerId: 3, sellerName: 'Tani Organik', stock: 200, description: 'Jeruk manis segar dari kebun', location: 'Bogor', weight: '1kg' },
+      { id: 108, name: 'Sambal Terasi', price: 15000, originalPrice: 22000, rating: 4.9, sold: 987, image: '🌶️', category: 'Bumbu', sellerId: 2, sellerName: 'Dapur Nusantara', stock: 50, description: 'Sambal terasi homemade', location: 'Bandung', weight: '200g' },
     ];
     products.push(...productList);
-    
-    // Add reviews for products
-    productReviews.push({ id: 1, productId: 101, userId: 1, rating: 5, comment: 'Sayurannya segar sekali! Recomended', createdAt: '2025-01-15' });
-    productReviews.push({ id: 2, productId: 102, userId: 1, rating: 5, comment: 'Nasgor nya enak banget, porsinya banyak!', createdAt: '2025-01-20' });
-    
     saveAll();
   }
 
@@ -178,15 +182,17 @@
     }
   }
 
-  // ========== LANDING PAGE (BERANDA) ==========
+  // ========== LANDING PAGE ==========
   function renderLandingPage(container) {
     container.innerHTML = `
-      <nav class="sticky top-0 bg-white/95 backdrop-blur-sm z-50 border-b py-4 px-6 shadow-sm"><div class="max-w-6xl mx-auto flex justify-between items-center"><div class="text-2xl font-bold text-primary cursor-pointer" id="backToLanding">Pangan<span class="text-accent">Ku</span></div><div class="hidden md:flex space-x-8 items-center"><a href="#fitur" class="text-gray-700 hover:text-primary">Fitur</a><a href="#carakerja" class="text-gray-700 hover:text-primary">Cara Kerja</a><a href="#produk" class="text-gray-700 hover:text-primary">Produk</a><button id="navLoginBtn" class="border border-primary text-primary px-6 py-2 rounded-full hover:bg-primaryLight">Masuk</button><button id="navRegisterBtn" class="bg-primary text-white px-6 py-2 rounded-full hover:bg-primaryDark">Daftar</button></div></div></nav>
-      <section class="py-16 md:py-24 px-6 max-w-6xl mx-auto"><div class="grid md:grid-cols-2 gap-12 items-center"><div><h1 class="text-4xl md:text-5xl font-bold text-gray-800">Makanan Segar, Langsung dari Sumbernya <span class="text-primary">—</span> Untukmu</h1><p class="text-gray-500 text-lg mt-4">PanganKu menghubungkan kamu dengan petani lokal dan pelaku UMKM untuk pilihan makanan yang lebih sehat, segar, dan terjangkau.</p><div class="flex gap-4 mt-8"><button id="heroGetStarted" class="bg-primary text-white px-6 py-3 rounded-full font-semibold shadow-md">Mulai Sekarang</button><button id="heroExplore" class="border border-gray-300 px-6 py-3 rounded-full">Lihat Produk</button></div><p class="mt-6 text-sm text-gray-400"><i class="fas fa-leaf text-primary mr-1"></i> Bergabung dengan 1000+ pengguna yang mendukung ekosistem pangan lokal.</p></div><div class="bg-gradient-to-br from-primaryLight to-white rounded-3xl p-8 text-center shadow-lg"><i class="fas fa-hand-holding-heart text-7xl text-primary"></i><i class="fas fa-carrot text-6xl text-accent mx-4"></i><i class="fas fa-store text-7xl text-primary"></i><p class="mt-4 font-medium text-gray-600">🌾 Petani → UMKM → Pembeli</p></div></div></section>
-      <section class="bg-grayBg py-20 px-6"><div class="max-w-6xl mx-auto"><h2 class="text-3xl font-bold text-center">Kenapa Memilih PanganKu?</h2><div class="grid md:grid-cols-3 gap-8 mt-12"><div class="bg-white p-6 rounded-2xl text-center shadow-sm"><div class="bg-primaryLight w-16 h-16 rounded-full flex mx-auto items-center justify-center"><i class="fas fa-seedling text-2xl text-primary"></i></div><h3 class="font-bold text-xl mt-4">🌱 Segar & Lokal</h3><p class="text-gray-500">Dapatkan sayur dan makanan langsung dari petani & UMKM.</p></div><div class="bg-white p-6 rounded-2xl text-center shadow-sm"><div class="bg-primaryLight w-16 h-16 rounded-full flex mx-auto items-center justify-center"><i class="fas fa-tag text-2xl text-primary"></i></div><h3 class="font-bold text-xl mt-4">💸 Harga Terjangkau</h3><p class="text-gray-500">Tanpa perantara, harga lebih bersahabat.</p></div><div class="bg-white p-6 rounded-2xl text-center shadow-sm"><div class="bg-primaryLight w-16 h-16 rounded-full flex mx-auto items-center justify-center"><i class="fas fa-truck text-2xl text-primary"></i></div><h3 class="font-bold text-xl mt-4">🚚 Pengiriman Cepat</h3><p class="text-gray-500">Diantarkan dari penjual terdekat.</p></div></div></div></section>
-      <section id="produk" class="py-20 px-6 max-w-6xl mx-auto"><h2 class="text-3xl font-bold text-center mb-8">🔥 Produk Populer</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4">${products.slice(0, 8).map(p => `<div class="bg-white rounded-xl p-3 shadow-sm"><div class="text-5xl text-center">${p.image}</div><p class="font-semibold text-sm mt-2">${p.name}</p><p class="text-primary font-bold text-sm">${formatRupiah(p.price)}</p><div class="flex items-center text-xs text-yellow-500"><i class="fas fa-star mr-1"></i>${p.rating}</div></div>`).join('')}</div></section>
-      <section class="bg-gradient-to-r from-primaryLight to-white py-20 px-6 text-center"><h2 class="text-3xl font-bold">Mulai Perjalananmu dengan PanganKu Hari Ini</h2><div class="flex flex-wrap justify-center gap-4 mt-6"><button id="ctaRegisterNow" class="bg-primary text-white px-8 py-3 rounded-full font-semibold shadow-md">Daftar Sekarang</button><button id="ctaJoinSeller" class="bg-accent text-white px-8 py-3 rounded-full font-semibold">Gabung sebagai UMKM</button><button id="ctaJoinFarmer" class="border border-primary text-primary px-8 py-3 rounded-full font-semibold">🌾 Gabung sebagai Petani</button></div></section>
-      <footer class="bg-gray-100 py-12 px-6"><div class="max-w-6xl mx-auto text-center text-sm text-gray-500">© 2025 PanganKu — Membangun Ekosistem Pangan Lokal Indonesia</div></footer>
+      <nav class="sticky top-0 bg-white/95 backdrop-blur-md z-50 shadow-lg py-4 px-6"><div class="max-w-7xl mx-auto flex justify-between items-center"><div class="text-2xl font-bold text-primary flex items-center gap-2"><i class="fas fa-leaf"></i> Pangan<span class="text-accent">Ku</span></div><div class="hidden md:flex gap-8 items-center"><a href="#home" class="text-gray-600 hover:text-primary">Beranda</a><a href="#fitur" class="text-gray-600 hover:text-primary">Fitur</a><a href="#produk" class="text-gray-600 hover:text-primary">Produk</a><a href="#testimoni" class="text-gray-600 hover:text-primary">Testimoni</a><button id="navLoginBtn" class="border-2 border-primary text-primary px-6 py-2 rounded-full hover:bg-primary hover:text-white transition-all">Masuk</button><button id="navRegisterBtn" class="bg-primary text-white px-6 py-2 rounded-full hover:bg-primaryDark shadow-md transition-all">Daftar Gratis</button></div></div></nav>
+      <section id="home" class="relative overflow-hidden bg-gradient-to-br from-primaryLight via-white to-white py-24 px-6"><div class="absolute top-20 right-10 text-8xl opacity-10 animate-float">🥬</div><div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center"><div><div class="inline-flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-full mb-6"><i class="fas fa-store text-primary"></i><span class="text-primary font-medium">Marketplace Lokal Indonesia</span></div><h1 class="text-5xl md:text-6xl font-extrabold leading-tight text-gray-800">Makanan Segar, <span class="text-primary">Langsung</span> dari Sumbernya</h1><p class="text-gray-500 text-lg mt-6">PanganKu menghubungkan kamu dengan petani lokal dan UMKM untuk pilihan makanan yang lebih sehat, segar, dan terjangkau.</p><div class="flex gap-4 mt-8"><button id="heroGetStarted" class="bg-primary text-white px-8 py-3 rounded-full font-semibold shadow-lg hover:bg-primaryDark transition-all">Mulai Belanja →</button><button id="heroExplore" class="border-2 border-gray-300 px-8 py-3 rounded-full font-semibold hover:border-primary hover:text-primary transition-all">Lihat Produk</button></div></div><div class="relative"><div class="bg-gradient-to-br from-primary/10 to-primaryLight/30 rounded-3xl p-8 shadow-2xl"><div class="grid grid-cols-3 gap-4"><div class="bg-white rounded-2xl p-4 shadow-md text-center"><div class="text-5xl">🥬</div><p class="font-semibold">Sayur Segar</p></div><div class="bg-white rounded-2xl p-4 shadow-md text-center transform translate-y-2"><div class="text-5xl">🍳</div><p class="font-semibold">Homemade</p></div><div class="bg-white rounded-2xl p-4 shadow-md text-center"><div class="text-5xl">🍊</div><p class="font-semibold">Buah Lokal</p></div></div><div class="mt-6 text-center"><i class="fas fa-hand-holding-heart text-5xl text-primary opacity-70"></i><p class="mt-2 text-gray-600">🌾 Petani → UMKM → Pembeli</p></div></div></div></div></section>
+      <section class="py-16 px-6 bg-white"><div class="max-w-7xl mx-auto grid md:grid-cols-4 gap-8 text-center"><div><div class="text-4xl font-bold text-primary">200+</div><p class="text-gray-500">UMKM Mitra</p></div><div><div class="text-4xl font-bold text-primary">50+</div><p class="text-gray-500">Petani Lokal</p></div><div><div class="text-4xl font-bold text-primary">1000+</div><p class="text-gray-500">Pelanggan Puas</p></div><div><div class="text-4xl font-bold text-primary">4.9</div><p class="text-gray-500">Rating Pengguna</p></div></div></section>
+      <section id="fitur" class="py-20 px-6 bg-grayBg"><div class="max-w-7xl mx-auto text-center"><h2 class="text-3xl md:text-4xl font-bold text-gray-800">Kenapa Memilih <span class="text-primary">PanganKu</span>?</h2><div class="grid md:grid-cols-3 gap-8 mt-12"><div class="bg-white p-8 rounded-2xl shadow-lg"><div class="w-20 h-20 bg-primaryLight rounded-full flex items-center justify-center mx-auto mb-5"><i class="fas fa-seedling text-3xl text-primary"></i></div><h3 class="text-xl font-bold">🌱 Segar & Lokal</h3><p class="text-gray-500 mt-2">Produk langsung dari petani dan UMKM</p></div><div class="bg-white p-8 rounded-2xl shadow-lg"><div class="w-20 h-20 bg-primaryLight rounded-full flex items-center justify-center mx-auto mb-5"><i class="fas fa-tag text-3xl text-primary"></i></div><h3 class="text-xl font-bold">💸 Harga Terjangkau</h3><p class="text-gray-500 mt-2">Tanpa perantara, harga lebih bersahabat</p></div><div class="bg-white p-8 rounded-2xl shadow-lg"><div class="w-20 h-20 bg-primaryLight rounded-full flex items-center justify-center mx-auto mb-5"><i class="fas fa-truck-fast text-3xl text-primary"></i></div><h3 class="text-xl font-bold">🚚 Pengiriman Cepat</h3><p class="text-gray-500 mt-2">Diantarkan dari penjual terdekat</p></div></div></div></section>
+      <section id="produk" class="py-20 px-6 bg-white"><div class="max-w-7xl mx-auto"><h2 class="text-3xl md:text-4xl font-bold text-center text-gray-800">🔥 Produk <span class="text-primary">Terlaris</span></h2><div class="grid grid-cols-2 md:grid-cols-4 gap-5 mt-12">${products.slice(0, 8).map(p => `<div class="bg-white rounded-2xl overflow-hidden shadow-lg product-card" data-product='${JSON.stringify(p)}'><div class="h-40 flex items-center justify-center text-6xl bg-primaryLight">${p.image}</div><div class="p-4"><h3 class="font-semibold text-gray-800">${p.name}</h3><p class="text-primary font-bold mt-1">${formatRupiah(p.price)}</p><div class="flex items-center gap-1 mt-1"><i class="fas fa-star text-yellow-400 text-sm"></i><span class="text-sm">${p.rating}</span><span class="text-xs text-gray-400 ml-2">Terjual ${p.sold}</span></div></div></div>`).join('')}</div><div class="text-center mt-10"><button id="viewAllProducts" class="px-8 py-3 rounded-full border-2 border-primary text-primary font-semibold hover:bg-primary hover:text-white transition-all">Lihat Semua Produk →</button></div></div></section>
+      <section id="testimoni" class="py-20 px-6 bg-grayBg"><div class="max-w-7xl mx-auto"><h2 class="text-3xl md:text-4xl font-bold text-center text-gray-800">Apa Kata <span class="text-primary">Mereka</span>?</h2><div class="grid md:grid-cols-3 gap-8 mt-12"><div class="bg-white p-6 rounded-2xl shadow-md"><div class="flex items-center gap-3 mb-4"><div class="w-12 h-12 bg-primaryLight rounded-full flex items-center justify-center text-2xl">👩</div><div><p class="font-bold">Anisa Rahma</p><div class="flex text-yellow-400"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div></div></div><p class="text-gray-600">"Sayuran segar langsung dari petani! Harganya lebih murah dari pasar. Recomended!"</p></div><div class="bg-white p-6 rounded-2xl shadow-md"><div class="flex items-center gap-3 mb-4"><div class="w-12 h-12 bg-primaryLight rounded-full flex items-center justify-center text-2xl">👨</div><div><p class="font-bold">Budi Santoso</p><div class="flex text-yellow-400"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div></div></div><p class="text-gray-600">"Platformnya mudah digunakan, pengiriman cepat. UMKM lokal jadi semakin dikenal!"</p></div><div class="bg-white p-6 rounded-2xl shadow-md"><div class="flex items-center gap-3 mb-4"><div class="w-12 h-12 bg-primaryLight rounded-full flex items-center justify-center text-2xl">👨‍🌾</div><div><p class="font-bold">Pak Slamet</p><div class="flex text-yellow-400"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div></div></div><p class="text-gray-600">"Jual hasil panen tanpa tengkulak, pendapatan lebih stabil. Terima kasih PanganKu!"</p></div></div></div></section>
+      <section class="bg-gradient-to-r from-primary to-primaryDark py-20 px-6 text-center text-white"><h2 class="text-3xl md:text-4xl font-bold">Siap Memulai Perjalanan Bersama PanganKu?</h2><div class="flex flex-wrap justify-center gap-4 mt-8"><button id="ctaRegisterNow" class="bg-white text-primary px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all">Daftar Sekarang</button><button id="ctaJoinSeller" class="border-2 border-white px-8 py-3 rounded-full font-bold hover:bg-white hover:text-primary transition-all">Gabung sebagai UMKM</button></div></section>
+      <footer class="bg-gray-900 text-white/70 py-12 px-6"><div class="max-w-7xl mx-auto text-center">© 2025 PanganKu — Membangun Ekosistem Pangan Lokal Indonesia</div></footer>
     `;
     attachLandingEvents();
   }
@@ -195,38 +201,38 @@
     document.getElementById('navLoginBtn')?.addEventListener('click', () => { currentPage = 'login'; renderApp(); });
     document.getElementById('navRegisterBtn')?.addEventListener('click', () => { currentPage = 'register'; regState = { step: 1, role: null, formData: {} }; renderApp(); });
     document.getElementById('heroGetStarted')?.addEventListener('click', () => { currentPage = 'register'; regState = { step: 1, role: null, formData: {} }; renderApp(); });
+    document.getElementById('heroExplore')?.addEventListener('click', () => { showToast('✨ Silakan login untuk melihat semua produk!', 'info'); setTimeout(() => { currentPage = 'login'; renderApp(); }, 1500); });
     document.getElementById('ctaRegisterNow')?.addEventListener('click', () => { currentPage = 'register'; regState = { step: 1, role: null, formData: {} }; renderApp(); });
-    document.getElementById('ctaJoinSeller')?.addEventListener('click', () => { currentPage = 'register'; regState = { step: 1, role: null, formData: {} }; setTimeout(() => { const card = document.querySelector('.role-card[data-role="seller"]'); if(card) card.click(); }, 100); renderApp(); });
-    document.getElementById('ctaJoinFarmer')?.addEventListener('click', () => { currentPage = 'register'; regState = { step: 1, role: null, formData: {} }; setTimeout(() => { const card = document.querySelector('.role-card[data-role="farmer"]'); if(card) card.click(); }, 100); renderApp(); });
-    document.getElementById('heroExplore')?.addEventListener('click', () => alert("✨ Silakan login untuk melihat semua produk segar dari petani dan UMKM!"));
-    document.getElementById('backToLanding')?.addEventListener('click', () => { currentPage = 'landing'; renderApp(); });
+    document.getElementById('ctaJoinSeller')?.addEventListener('click', () => { currentPage = 'register'; regState = { step: 1, role: null, formData: {} }; setTimeout(() => { document.querySelector('.role-card[data-role="seller"]')?.click(); }, 100); renderApp(); });
+    document.getElementById('viewAllProducts')?.addEventListener('click', () => { showToast('✨ Silakan login untuk melihat semua produk!', 'info'); setTimeout(() => { currentPage = 'login'; renderApp(); }, 1500); });
+    document.querySelectorAll('[data-product]').forEach(card => card.addEventListener('click', () => { const p = JSON.parse(card.dataset.product); alert(`🛍️ ${p.name}\n💰 ${formatRupiah(p.price)}\n⭐ ${p.rating}\n📍 ${p.location}\n📝 ${p.description}`); }));
   }
 
   function renderLoginPage(container) {
-    container.innerHTML = `<div class="min-h-screen bg-gradient-to-br from-primaryLight to-white flex items-center justify-center p-4"><div class="max-w-5xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-wrap md:flex-nowrap"><div class="w-full md:w-1/2 bg-gradient-to-br from-primary to-primaryDark p-8 text-center text-white"><i class="fas fa-leaf text-5xl mb-4"></i><h2 class="text-3xl font-bold">PanganKu</h2><p>Marketplace Lokal Indonesia</p><div class="mt-8"><i class="fas fa-store text-6xl opacity-70"></i></div></div><div class="w-full md:w-1/2 p-8"><button id="backToLandingBtn" class="text-gray-400 hover:text-primary mb-4 flex items-center gap-1"><i class="fas fa-arrow-left"></i> Kembali ke Beranda</button><h2 class="text-2xl font-bold">Masuk ke Akun</h2><p class="text-gray-500 text-sm mt-1">Belanja kebutuhan segar langsung dari sumbernya</p><div class="mt-4 space-y-3"><input type="email" id="loginEmail" placeholder="Email" class="w-full p-3 border rounded-xl"><input type="password" id="loginPassword" placeholder="Kata Sandi" class="w-full p-3 border rounded-xl"><button id="doLogin" class="w-full bg-primary text-white py-3 rounded-xl font-semibold">Masuk</button><div class="bg-gray-50 p-3 rounded-xl text-xs text-gray-500 text-center"><p class="font-semibold mb-1">🔐 Akun Demo:</p><p>Pembeli: buyer@panganku.com / 123456</p><p>UMKM: seller@panganku.com / 123456</p><p>Petani: farmer@panganku.com / 123456</p></div></div></div></div></div>`;
-    document.getElementById('doLogin')?.addEventListener('click', () => { const email = document.getElementById('loginEmail').value; const pwd = document.getElementById('loginPassword').value; const user = users.find(u => u.email === email && u.password === pwd); if (user) setUser(user); else alert('Email atau kata sandi salah'); });
+    container.innerHTML = `<div class="min-h-screen bg-gradient-to-br from-primaryLight to-white flex items-center justify-center p-4"><div class="max-w-5xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-wrap md:flex-nowrap"><div class="w-full md:w-1/2 bg-gradient-to-br from-primary to-primaryDark p-8 text-center text-white"><i class="fas fa-leaf text-5xl mb-4"></i><h2 class="text-3xl font-bold">PanganKu</h2><p>Marketplace Lokal Indonesia</p></div><div class="w-full md:w-1/2 p-8"><button id="backToLandingBtn" class="text-gray-400 hover:text-primary mb-4"><i class="fas fa-arrow-left"></i> Kembali</button><h2 class="text-2xl font-bold">Masuk ke Akun</h2><div class="mt-6 space-y-3"><input type="email" id="loginEmail" placeholder="Email" class="w-full p-3 border rounded-xl"><input type="password" id="loginPassword" placeholder="Kata Sandi" class="w-full p-3 border rounded-xl"><button id="doLogin" class="w-full bg-primary text-white py-3 rounded-xl font-semibold">Masuk</button><div class="bg-gray-50 p-3 rounded-xl text-xs text-center"><p class="font-semibold">🔐 Akun Demo:</p><p>Pembeli: buyer@panganku.com / 123456<br>UMKM: seller@panganku.com / 123456<br>Petani: farmer@panganku.com / 123456</p></div></div></div></div></div>`;
+    document.getElementById('doLogin')?.addEventListener('click', () => { const email = document.getElementById('loginEmail').value; const pwd = document.getElementById('loginPassword').value; const user = users.find(u => u.email === email && u.password === pwd); if (user) setUser(user); else alert('Email atau password salah'); });
     document.getElementById('backToLandingBtn')?.addEventListener('click', () => { currentPage = 'landing'; renderApp(); });
   }
 
   function renderRegisterPage(container) {
     if (regState.step === 1) {
-      container.innerHTML = `<div class="min-h-screen bg-gradient-to-br from-primaryLight to-white flex items-center justify-center p-4"><div class="max-w-4xl w-full bg-white rounded-3xl shadow-2xl p-8"><button id="backToLandingReg" class="text-gray-400 hover:text-primary mb-4"><i class="fas fa-arrow-left"></i> Kembali</button><h2 class="text-2xl font-bold text-center">Bergabung dengan PanganKu</h2><div class="grid md:grid-cols-3 gap-5 mt-8"><div class="border-2 rounded-2xl p-6 text-center cursor-pointer role-card" data-role="buyer"><i class="fas fa-user text-4xl text-primary"></i><h3 class="font-bold text-xl mt-3">Pembeli</h3><p class="text-sm text-gray-500">Dapatkan makanan segar</p></div><div class="border-2 rounded-2xl p-6 text-center cursor-pointer role-card" data-role="seller"><i class="fas fa-store text-4xl text-accent"></i><h3 class="font-bold text-xl mt-3">UMKM Penjual</h3><p class="text-sm text-gray-500">Jual makanan homemade</p></div><div class="border-2 rounded-2xl p-6 text-center cursor-pointer role-card" data-role="farmer"><i class="fas fa-tractor text-4xl text-primary"></i><h3 class="font-bold text-xl mt-3">Petani</h3><p class="text-sm text-gray-500">Jual hasil panen</p></div></div><div class="text-center mt-8"><button id="backToLoginReg" class="text-gray-500">← Kembali ke Login</button></div></div></div>`;
+      container.innerHTML = `<div class="min-h-screen bg-gradient-to-br from-primaryLight to-white flex items-center justify-center p-4"><div class="max-w-4xl w-full bg-white rounded-3xl shadow-2xl p-8"><button id="backToLandingReg" class="text-gray-400 mb-4"><i class="fas fa-arrow-left"></i> Kembali</button><h2 class="text-2xl font-bold text-center">Daftar PanganKu</h2><div class="grid md:grid-cols-3 gap-5 mt-8"><div class="border-2 rounded-2xl p-6 text-center cursor-pointer role-card hover:border-primary" data-role="buyer"><i class="fas fa-user text-4xl text-primary"></i><h3 class="font-bold">Pembeli</h3></div><div class="border-2 rounded-2xl p-6 text-center cursor-pointer role-card hover:border-primary" data-role="seller"><i class="fas fa-store text-4xl text-accent"></i><h3 class="font-bold">UMKM</h3></div><div class="border-2 rounded-2xl p-6 text-center cursor-pointer role-card hover:border-primary" data-role="farmer"><i class="fas fa-tractor text-4xl text-primary"></i><h3 class="font-bold">Petani</h3></div></div><div class="text-center mt-8"><button id="backToLoginReg" class="text-gray-500">← Kembali Login</button></div></div></div>`;
       document.querySelectorAll('.role-card').forEach(card => card.addEventListener('click', () => { regState.role = card.dataset.role; regState.step = 2; renderApp(); }));
       document.getElementById('backToLandingReg')?.addEventListener('click', () => { currentPage = 'landing'; renderApp(); });
       document.getElementById('backToLoginReg')?.addEventListener('click', () => { currentPage = 'login'; renderApp(); });
     } else if (regState.step === 2) {
-      container.innerHTML = `<div class="min-h-screen bg-gradient-to-br from-primaryLight to-white flex items-center justify-center p-4"><div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8"><button id="backStep1" class="text-gray-400 mb-4"><i class="fas fa-arrow-left"></i> Kembali</button><h2 class="text-2xl font-bold">Informasi Dasar</h2><div class="space-y-3 mt-4"><input id="regName" placeholder="Nama Lengkap" class="w-full p-3 border rounded-xl"><input id="regEmail" placeholder="Email" class="w-full p-3 border rounded-xl"><input id="regPass" type="password" placeholder="Kata Sandi" class="w-full p-3 border rounded-xl"><input id="regConfirm" type="password" placeholder="Konfirmasi Kata Sandi" class="w-full p-3 border rounded-xl"><input id="regPhone" placeholder="Nomor Telepon" class="w-full p-3 border rounded-xl"><textarea id="regAddress" placeholder="Alamat Lengkap" rows="2" class="w-full p-3 border rounded-xl"></textarea></div><button id="nextStep" class="w-full mt-6 bg-primary text-white py-3 rounded-xl font-semibold">Lanjutkan</button></div></div>`;
-      document.getElementById('nextStep')?.addEventListener('click', () => { const name = document.getElementById('regName').value; const email = document.getElementById('regEmail').value; const pwd = document.getElementById('regPass').value; const conf = document.getElementById('regConfirm').value; if (!name || !email || pwd !== conf) { alert('Isi data dengan benar dan pastikan kata sandi cocok'); return; } if (users.find(u => u.email === email)) { alert('Email sudah terdaftar'); return; } regState.formData = { name, email, password: pwd, phone: document.getElementById('regPhone').value, address: document.getElementById('regAddress').value }; regState.step = 3; renderApp(); });
+      container.innerHTML = `<div class="min-h-screen bg-gradient-to-br from-primaryLight to-white flex items-center justify-center p-4"><div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8"><button id="backStep1" class="text-gray-400 mb-4"><i class="fas fa-arrow-left"></i> Kembali</button><h2 class="text-2xl font-bold">Informasi Dasar</h2><div class="space-y-3 mt-4"><input id="regName" placeholder="Nama Lengkap" class="w-full p-3 border rounded-xl"><input id="regEmail" placeholder="Email" class="w-full p-3 border rounded-xl"><input id="regPass" type="password" placeholder="Password" class="w-full p-3 border rounded-xl"><input id="regConfirm" type="password" placeholder="Konfirmasi" class="w-full p-3 border rounded-xl"><input id="regPhone" placeholder="No Telepon" class="w-full p-3 border rounded-xl"><textarea id="regAddress" placeholder="Alamat" rows="2" class="w-full p-3 border rounded-xl"></textarea></div><button id="nextStep" class="w-full mt-6 bg-primary text-white py-3 rounded-xl">Lanjutkan</button></div></div>`;
+      document.getElementById('nextStep')?.addEventListener('click', () => { const name = document.getElementById('regName').value; const email = document.getElementById('regEmail').value; const pwd = document.getElementById('regPass').value; const conf = document.getElementById('regConfirm').value; if (!name || !email || pwd !== conf) { alert('Isi data dengan benar'); return; } if (users.find(u => u.email === email)) { alert('Email sudah terdaftar'); return; } regState.formData = { name, email, password: pwd, phone: document.getElementById('regPhone').value, address: document.getElementById('regAddress').value }; regState.step = 3; renderApp(); });
       document.getElementById('backStep1')?.addEventListener('click', () => { regState.step = 1; renderApp(); });
     } else if (regState.step === 3) {
-      let extra = ''; if (regState.role === 'seller') extra = `<input id="businessName" placeholder="Nama Usaha" class="w-full p-3 border rounded-xl mb-2"><input id="businessType" placeholder="Jenis Usaha" class="w-full p-3 border rounded-xl">`; if (regState.role === 'farmer') extra = `<input id="farmName" placeholder="Nama Kebun" class="w-full p-3 border rounded-xl mb-2"><input id="crops" placeholder="Jenis Tanaman" class="w-full p-3 border rounded-xl">`; if (regState.role === 'buyer') extra = `<div class="text-center p-4 bg-gray-50 rounded-xl"><i class="fas fa-check-circle text-3xl text-primary"></i><p class="mt-2">✅ Tidak ada data tambahan untuk Pembeli</p></div>`;
-      container.innerHTML = `<div class="min-h-screen bg-gradient-to-br from-primaryLight to-white flex items-center justify-center p-4"><div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8"><button id="backStep2" class="text-gray-400 mb-4"><i class="fas fa-arrow-left"></i> Kembali</button><h2 class="text-2xl font-bold">${regState.role === 'seller' ? 'Data UMKM' : regState.role === 'farmer' ? 'Data Petani' : 'Selesai'}</h2><div class="mt-4">${extra}</div><button id="completeReg" class="w-full mt-6 bg-primary text-white py-3 rounded-xl font-semibold">Daftar Sekarang</button></div></div>`;
+      let extra = ''; if (regState.role === 'seller') extra = `<input id="businessName" placeholder="Nama Usaha" class="w-full p-3 border rounded-xl mb-2"><input id="businessType" placeholder="Jenis Usaha" class="w-full p-3 border rounded-xl">`; if (regState.role === 'farmer') extra = `<input id="farmName" placeholder="Nama Kebun" class="w-full p-3 border rounded-xl mb-2"><input id="crops" placeholder="Jenis Tanaman" class="w-full p-3 border rounded-xl">`; if (regState.role === 'buyer') extra = `<div class="text-center p-4 bg-gray-50 rounded-xl"><i class="fas fa-check-circle text-3xl text-primary"></i><p>✅ Selesai! Tidak ada data tambahan</p></div>`;
+      container.innerHTML = `<div class="min-h-screen bg-gradient-to-br from-primaryLight to-white flex items-center justify-center p-4"><div class="max-w-2xl w-full bg-white rounded-3xl shadow-2xl p-8"><button id="backStep2" class="text-gray-400 mb-4"><i class="fas fa-arrow-left"></i> Kembali</button><h2 class="text-2xl font-bold">${regState.role === 'seller' ? 'Data UMKM' : regState.role === 'farmer' ? 'Data Petani' : 'Selesai'}</h2><div class="mt-4">${extra}</div><button id="completeReg" class="w-full mt-6 bg-primary text-white py-3 rounded-xl">Daftar</button></div></div>`;
       document.getElementById('completeReg')?.addEventListener('click', () => { const newId = Date.now(); let userObj = { id: newId, role: regState.role, name: regState.formData.name, email: regState.formData.email, password: regState.formData.password, phone: regState.formData.phone, address: regState.formData.address, verified: true }; if (regState.role === 'seller') { userObj.businessName = document.getElementById('businessName')?.value; userObj.businessType = document.getElementById('businessType')?.value; } if (regState.role === 'farmer') { userObj.farmName = document.getElementById('farmName')?.value; userObj.crops = document.getElementById('crops')?.value; } users.push(userObj); saveAll(); alert('Pendaftaran berhasil! Silakan login.'); currentPage = 'login'; renderApp(); });
       document.getElementById('backStep2')?.addEventListener('click', () => { regState.step = 2; renderApp(); });
     }
   }
 
-  // ========== DASHBOARD PEMBELI (MARKETPLACE LENGKAP DENGAN NOTIF) ==========
+  // ========== BUYER DASHBOARD (SAMA PERSIS SEPERTI GAMBAR, TAPI DROPDOWN DIPERBAIKI) ==========
   function renderBuyerApp(container) {
     const cartCount = getCartCount();
     const myWishlist = wishlists.filter(w => w.userId === currentUser.id).map(w => w.productId);
@@ -234,30 +240,81 @@
     const myOrders = orders.filter(o => o.buyerId === currentUser.id).sort((a,b) => b.id - a.id);
     const userNotifs = notifications.filter(n => n.userId === currentUser.id);
     const unreadCount = userNotifs.filter(n => !n.read).length;
-    const primaryAddr = addresses.find(a => a.userId === currentUser.id && a.isPrimary);
     
     container.innerHTML = `
       <div class="min-h-screen bg-grayBg">
-        <nav class="sticky top-0 z-50 bg-white shadow-md px-4 py-3 flex justify-between items-center"><div class="text-2xl font-bold text-primary cursor-pointer" id="backToLandingFromDash">Pangan<span class="text-accent">Ku</span></div><div class="flex items-center gap-5"><div class="relative cursor-pointer" id="notifIcon"><i class="fas fa-bell text-xl text-gray-600"></i><span id="notifBadgeCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ${unreadCount === 0 ? 'hidden' : ''}">${unreadCount}</span></div><div class="relative cursor-pointer" id="cartIcon"><i class="fas fa-shopping-cart text-xl text-gray-600"></i>${cartCount ? `<span class="absolute -top-2 -right-2 bg-accent text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">${cartCount}</span>` : ''}</div><div class="relative group"><div class="flex items-center gap-2 bg-primaryLight px-3 py-2 rounded-full cursor-pointer"><i class="fas fa-user text-primary"></i><span>${currentUser.name}</span><i class="fas fa-chevron-down text-xs"></i></div><div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg hidden group-hover:block z-50"><button id="myOrdersBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100"><i class="fas fa-box mr-2"></i>Pesanan Saya</button><button id="addressBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100"><i class="fas fa-map-marker-alt mr-2"></i>Alamat Saya</button><button id="wishlistBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100"><i class="fas fa-heart mr-2"></i>Favorit</button><button id="voucherBtn" class="w-full text-left px-4 py-2 hover:bg-gray-100"><i class="fas fa-ticket-alt mr-2"></i>Voucher Saya</button><button id="logoutBtn" class="w-full text-left px-4 py-2 text-red-500"><i class="fas fa-sign-out-alt mr-2"></i>Keluar</button></div></div></div></nav>
+        <!-- NAVBAR -->
+        <nav class="sticky top-0 z-50 bg-white shadow-md px-4 py-3 flex justify-between items-center">
+          <div class="text-2xl font-bold text-primary cursor-pointer" id="logoDashboard">Pangan<span class="text-accent">Ku</span></div>
+          <div class="flex items-center gap-5">
+            <div class="relative cursor-pointer" id="notifIcon">
+              <i class="fas fa-bell text-xl text-gray-600"></i>
+              <span id="notifBadgeCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ${unreadCount === 0 ? 'hidden' : ''}">${unreadCount}</span>
+            </div>
+            <div class="relative cursor-pointer" id="cartIcon">
+              <i class="fas fa-shopping-cart text-xl text-gray-600"></i>
+              ${cartCount ? `<span class="absolute -top-2 -right-2 bg-accent text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">${cartCount}</span>` : ''}
+            </div>
+            
+            <!-- DROPDOWN YANG SUDAH DIPERBAIKI - TIDAK ILANG SAAT DIKLIK -->
+            <div class="dropdown-container">
+              <div class="flex items-center gap-2 bg-primaryLight px-3 py-2 rounded-full cursor-pointer">
+                <i class="fas fa-user text-primary"></i>
+                <span>${currentUser.name}</span>
+                <i class="fas fa-chevron-down text-xs"></i>
+              </div>
+              <div class="dropdown-menu">
+                <button id="myOrdersBtn"><i class="fas fa-box mr-2"></i>Pesanan Saya</button>
+                <button id="wishlistBtn"><i class="fas fa-heart mr-2"></i>Favorit</button>
+                <button id="voucherBtn"><i class="fas fa-ticket-alt mr-2"></i>Voucher Saya</button>
+                <button id="addressBtn"><i class="fas fa-map-marker-alt mr-2"></i>Alamat Saya</button>
+                <button id="profileBtn"><i class="fas fa-user-circle mr-2"></i>Profil Saya</button>
+                <button id="settingsBtn"><i class="fas fa-cog mr-2"></i>Pengaturan</button>
+                <button id="faqBtn"><i class="fas fa-question-circle mr-2"></i>FAQ & Bantuan</button>
+                <button id="logoutBtn"><i class="fas fa-sign-out-alt mr-2"></i>Keluar</button>
+              </div>
+            </div>
+          </div>
+        </nav>
         
-        <div class="bg-gradient-to-r from-primary to-primaryDark text-white p-6 mx-4 rounded-2xl flex justify-between"><div><h2 class="text-2xl font-bold">Selamat Belanja, ${currentUser.name}!</h2><p>Dapatkan promo hingga 50% + gratis ongkir</p><p class="text-sm mt-1">🚚 Pengiriman dari petani & UMKM terdekat</p></div><i class="fas fa-shopping-bag text-6xl opacity-50"></i></div>
+        <div class="bg-gradient-to-r from-primary to-primaryDark text-white p-6 mx-4 rounded-2xl flex justify-between">
+          <div><h2 class="text-2xl font-bold">Selamat Belanja, ${currentUser.name}!</h2><p>Dapatkan promo hingga 50% + gratis ongkir minimal belanja Rp75.000</p></div>
+          <i class="fas fa-shopping-bag text-6xl opacity-50"></i>
+        </div>
         
-        <div class="max-w-7xl mx-auto px-4 py-4 flex gap-3"><input type="text" id="searchInput" placeholder="Cari produk segar..." class="flex-1 p-3 border rounded-xl focus:ring-2 focus:ring-primary"><select id="categoryFilter" class="p-3 border rounded-xl bg-white"><option value="">Semua Kategori</option><option>Sayuran</option><option>Buah</option><option>Makanan</option><option>Minuman</option><option>Protein</option><option>Bumbu</option></select></div>
+        <div class="max-w-7xl mx-auto px-4 py-4">
+          <input type="text" id="searchInput" placeholder="Cari produk segar..." class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-primary">
+        </div>
         
-        <div class="max-w-7xl mx-auto px-4 py-2"><div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4" id="productGrid">${allProducts.map(p => `<div class="bg-white rounded-xl overflow-hidden shadow-sm product-card" data-product='${JSON.stringify(p)}'><div class="h-36 flex items-center justify-center text-6xl bg-primaryLight relative">${p.image}${p.stock < 10 ? '<span class="absolute top-1 right-1 bg-red-500 text-white text-xs px-1 rounded">Stok Terbatas</span>' : ''}</div><div class="p-3"><div class="flex justify-between"><h4 class="font-semibold text-sm line-clamp-1">${p.name}</h4><button class="wishlistBtn text-lg ${myWishlist.includes(p.id) ? 'text-red-500' : 'text-gray-300'}" data-id="${p.id}"><i class="fas fa-heart"></i></button></div><p class="text-primary font-bold text-md">${formatRupiah(p.price)}</p><div class="flex items-center text-xs text-yellow-500"><i class="fas fa-star mr-1"></i>${p.rating} <span class="text-gray-400 ml-1">(${p.sold})</span></div><div class="flex gap-2 mt-2"><button class="addToCartBtn flex-1 bg-primary text-white text-xs py-1.5 rounded-lg" data-id="${p.id}">+ Keranjang</button></div></div></div>`).join('')}</div></div>
+        <div class="max-w-7xl mx-auto px-4 py-2">
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4" id="productGrid">
+            ${allProducts.map(p => `
+              <div class="bg-white rounded-xl overflow-hidden shadow-sm product-card" data-product='${JSON.stringify(p)}'>
+                <div class="h-32 flex items-center justify-center text-5xl bg-primaryLight relative">${p.image}</div>
+                <div class="p-3">
+                  <div class="flex justify-between">
+                    <h4 class="font-semibold text-sm">${p.name}</h4>
+                    <button class="wishlistBtn text-lg ${myWishlist.includes(p.id) ? 'text-red-500' : 'text-gray-300'}" data-id="${p.id}"><i class="fas fa-heart"></i></button>
+                  </div>
+                  <p class="text-primary font-bold">${formatRupiah(p.price)}</p>
+                  <div class="flex items-center text-xs text-yellow-500"><i class="fas fa-star"></i> ${p.rating} (${p.sold} terjual)</div>
+                  <button class="addToCartBtn w-full mt-2 bg-primary text-white text-xs py-1.5 rounded-lg" data-id="${p.id}">+ Keranjang</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
         
-        <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-end"><div class="bg-white w-full max-w-md h-full p-5 overflow-auto"><div class="flex justify-between"><h2 class="text-xl font-bold">🛒 Keranjang Belanja</h2><button id="closeCart" class="text-2xl">&times;</button></div><div id="cartItemsList"></div><div id="cartTotal" class="mt-4 font-bold text-lg"></div><div class="mt-2"><label class="text-sm">Kode Voucher</label><input type="text" id="voucherCode" placeholder="Masukkan kode voucher" class="w-full p-2 border rounded-lg text-sm"><button id="applyVoucher" class="mt-1 text-xs text-primary">Terapkan</button></div><button id="checkoutBtn" class="w-full bg-accent text-white py-3 rounded-xl mt-4 font-semibold">Checkout Sekarang</button></div></div>
-        
-        <div id="notifModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-96 p-5 max-h-96 overflow-auto"><h3 class="font-bold text-lg mb-3">📢 Notifikasi</h3><div id="notifList">${userNotifs.map(n => `<div class="border-b py-2 ${!n.read ? 'bg-primaryLight' : ''} cursor-pointer hover:bg-gray-50" data-id="${n.id}"><p class="font-medium">${n.title}</p><p class="text-sm text-gray-500">${n.message}</p><p class="text-xs text-gray-400 mt-1">${new Date(n.createdAt).toLocaleDateString('id-ID')} ${new Date(n.createdAt).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</p></div>`).join('') || '<p class="text-gray-400 text-center py-4">Belum ada notifikasi</p>'}</div><button id="closeNotif" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
-        
-        <div id="ordersModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-full max-w-2xl p-5 max-h-[80vh] overflow-auto"><h3 class="font-bold text-lg mb-3">📦 Riwayat Pesanan</h3>${myOrders.map(o => `<div class="border rounded-xl p-3 mb-3"><div class="flex justify-between"><div><p class="font-medium">${o.productName}</p><p class="text-sm text-gray-500">Qty: ${o.qty} | Total: ${formatRupiah(o.total)}</p><p class="text-xs mt-1"><span class="px-2 py-0.5 rounded-full text-xs ${o.status === 'Dikirim' ? 'bg-blue-100 text-blue-700' : o.status === 'Selesai' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">${o.status === 'Diproses' ? 'Diproses' : o.status === 'Dikirim' ? 'Dikirim' : o.status}</span></p></div><p class="text-xs text-gray-400">${new Date(o.createdAt).toLocaleDateString('id-ID')}</p></div>${o.trackingNumber ? `<p class="text-xs text-gray-500 mt-1">📦 No. Resi: ${o.trackingNumber}</p>` : ''}<button class="trackBtn text-xs text-primary mt-2" data-id="${o.id}">Lacak Pesanan</button></div>`).join('')}</div><button id="closeOrders" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
-        
-        <div id="addressModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-full max-w-lg p-5"><h3 class="font-bold text-lg">📍 Alamat Pengiriman</h3><div>${addresses.filter(a=>a.userId===currentUser.id).map(a => `<div class="border rounded-xl p-3 mb-2 ${a.isPrimary ? 'border-primary bg-primaryLight' : ''}"><p class="font-medium">${a.label} ${a.isPrimary ? '(Utama)' : ''}</p><p>${a.recipient} | ${a.phone}</p><p class="text-sm text-gray-600">${a.address}</p></div>`).join('')}</div><button id="closeAddress" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
-        
-        <div id="wishlistModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-96 p-5"><h3 class="font-bold text-lg">❤️ Produk Favorit</h3><div id="wishlistItems">${myWishlist.map(pid => { const p = products.find(pr => pr.id === pid); return p ? `<div class="flex justify-between items-center border-b py-2"><div><p class="font-medium">${p.name}</p><p>${formatRupiah(p.price)}</p></div><button class="removeWishlistBtn text-red-500" data-id="${p.id}">Hapus</button></div>` : ''; }).join('') || '<p class="text-gray-400 text-center py-4">Belum ada produk favorit</p>'}</div><button id="closeWishlist" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
-        
-        <div id="voucherModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-96 p-5"><h3 class="font-bold text-lg">🎫 Voucher Saya</h3><div>${vouchers.map(v => `<div class="border rounded-xl p-3 mb-2 bg-gradient-to-r from-yellow-50 to-white"><p class="font-bold text-primary">${v.code}</p><p>Diskon ${formatRupiah(v.discount)} min belanja ${formatRupiah(v.minPurchase)}</p><p class="text-xs text-gray-400">Berlaku hingga: ${v.expiry}</p></div>`).join('')}</div><button id="closeVoucher" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
-        
+        <!-- MODALS -->
+        <div id="cartModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-end"><div class="bg-white w-full max-w-md h-full p-5 overflow-auto"><div class="flex justify-between"><h2 class="text-xl font-bold">🛒 Keranjang</h2><button id="closeCart" class="text-2xl">&times;</button></div><div id="cartItemsList"></div><div id="cartTotal" class="mt-4 font-bold"></div><button id="checkoutBtn" class="w-full bg-accent text-white py-3 rounded-xl mt-4 font-semibold">Checkout Sekarang</button></div></div>
+        <div id="notifModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-96 p-5 max-h-96 overflow-auto"><h3 class="font-bold text-lg mb-3">📢 Notifikasi</h3><div id="notifList">${userNotifs.map(n => `<div class="border-b py-2 ${!n.read ? 'bg-primaryLight' : ''}" data-id="${n.id}"><p class="font-medium">${n.title}</p><p class="text-sm text-gray-500">${n.message}</p><p class="text-xs text-gray-400">${new Date(n.createdAt).toLocaleDateString()}</p></div>`).join('')}</div><button id="closeNotif" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
+        <div id="ordersModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-full max-w-2xl p-5 max-h-[80vh] overflow-auto"><h3 class="font-bold text-lg mb-3">📦 Pesanan Saya</h3>${myOrders.map(o => `<div class="border rounded-xl p-3 mb-3"><div class="flex justify-between"><div><p class="font-medium">${o.productName}</p><p class="text-sm">Qty: ${o.qty} | Total: ${formatRupiah(o.total)}</p><p class="text-xs mt-1"><span class="px-2 py-0.5 rounded-full bg-yellow-100">${o.status}</span></p></div><p class="text-xs text-gray-400">${new Date(o.createdAt).toLocaleDateString()}</p></div><button class="trackBtn text-xs text-primary mt-2" data-id="${o.id}">Lacak Pesanan</button></div>`).join('')}</div><button id="closeOrders" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
+        <div id="wishlistModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-96 p-5"><h3 class="font-bold text-lg">❤️ Favorit</h3><div>${myWishlist.map(pid => { const p = products.find(pr => pr.id === pid); return p ? `<div class="flex justify-between border-b py-2"><span>${p.name}</span><button class="removeWishlistBtn text-red-500" data-id="${p.id}">Hapus</button></div>` : ''; }).join('')}</div><button id="closeWishlist" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
+        <div id="voucherModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-96 p-5"><h3 class="font-bold text-lg">🎫 Voucher Saya</h3><div>${vouchers.map(v => `<div class="border rounded-xl p-3 mb-2 bg-gradient-to-r from-yellow-50 to-white"><p class="font-bold text-primary">${v.code}</p><p>Diskon ${formatRupiah(v.discount)} ${v.type === 'shipping' ? '(Ongkir)' : 'Produk'}</p><p class="text-xs">Min. belanja ${formatRupiah(v.minPurchase)}</p></div>`).join('')}</div><button id="closeVoucher" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
+        <div id="addressModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-full max-w-lg p-5"><h3 class="font-bold text-lg">📍 Alamat Saya</h3><div>${addresses.filter(a=>a.userId===currentUser.id).map(a => `<div class="border rounded-xl p-3 mb-2 ${a.isPrimary ? 'border-primary bg-primaryLight' : ''}"><p class="font-medium">${a.label} ${a.isPrimary ? '(Utama)' : ''}</p><p>${a.recipient} | ${a.phone}</p><p class="text-sm">${a.address}</p></div>`).join('')}</div><button id="closeAddress" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
+        <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-full max-w-md p-5"><h3 class="font-bold text-lg">👤 Profil Saya</h3><div class="space-y-3 mt-3"><p><strong>Nama:</strong> ${currentUser.name}</p><p><strong>Email:</strong> ${currentUser.email}</p><p><strong>Telepon:</strong> ${currentUser.phone}</p><p><strong>Bergabung:</strong> ${currentUser.joinDate || '2024-01-15'}</p></div><button id="closeProfile" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
+        <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-full max-w-md p-5"><h3 class="font-bold text-lg">⚙️ Pengaturan Akun</h3><div class="space-y-3 mt-3"><input type="password" id="oldPass" placeholder="Password Lama" class="w-full p-2 border rounded"><input type="password" id="newPass" placeholder="Password Baru" class="w-full p-2 border rounded"><input type="password" id="confirmPass" placeholder="Konfirmasi Password" class="w-full p-2 border rounded"><button id="changePasswordBtn" class="w-full bg-primary text-white py-2 rounded">Ubah Password</button></div><button id="closeSettings" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
+        <div id="faqModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-full max-w-md p-5 max-h-96 overflow-auto"><h3 class="font-bold text-lg">❓ FAQ & Bantuan</h3><div class="space-y-3 mt-3"><div><p class="font-semibold">Bagaimana cara melacak pesanan?</p><p class="text-sm text-gray-500">Buka menu "Pesanan Saya" dan klik "Lacak Pesanan"</p></div><div><p class="font-semibold">Bagaimana cara menggunakan voucher?</p><p class="text-sm text-gray-500">Masukkan kode voucher di halaman keranjang</p></div><div><p class="font-semibold">Metode pembayaran apa saja?</p><p class="text-sm text-gray-500">QRIS, Transfer Bank, COD, E-Wallet</p></div></div><button id="closeFaq" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
         <div id="trackingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 justify-center items-center"><div class="bg-white rounded-2xl w-96 p-5"><h3 class="font-bold text-lg">📦 Lacak Pengiriman</h3><div id="trackingInfo"></div><button id="closeTracking" class="mt-4 w-full bg-gray-200 py-2 rounded">Tutup</button></div></div>
       </div>
     `;
@@ -265,44 +322,64 @@
   }
 
   function attachBuyerEvents() {
-    document.querySelectorAll('.addToCartBtn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); const pid = parseInt(btn.dataset.id); const product = products.find(p => p.id === pid); if (product.stock <= 0) { showToast('Stok habis!', 'info'); return; } const existing = carts.find(c => c.userId === currentUser.id && c.productId === pid); if (existing) existing.qty++; else carts.push({ id: Date.now(), userId: currentUser.id, productId: pid, qty: 1 }); saveAll(); showToast(`${product.name} ditambahkan ke keranjang`); renderApp(); }));
+    // Add to cart
+    document.querySelectorAll('.addToCartBtn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); const pid = parseInt(btn.dataset.id); const p = products.find(p => p.id === pid); if (p.stock <= 0) { showToast('Stok habis!', 'info'); return; } const existing = carts.find(c => c.userId === currentUser.id && c.productId === pid); if (existing) existing.qty++; else carts.push({ id: Date.now(), userId: currentUser.id, productId: pid, qty: 1 }); saveAll(); showToast(`${p.name} ditambahkan ke keranjang`); renderApp(); }));
+    
+    // Wishlist
     document.querySelectorAll('.wishlistBtn').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); toggleWishlist(parseInt(btn.dataset.id)); }));
-    document.querySelectorAll('.product-card').forEach(card => card.addEventListener('click', () => { const p = JSON.parse(card.dataset.product); showProductDetail(p); }));
+    
+    // Product card click
+    document.querySelectorAll('.product-card').forEach(card => card.addEventListener('click', () => { const p = JSON.parse(card.dataset.product); alert(`🛍️ ${p.name}\n💰 ${formatRupiah(p.price)}\n⭐ ${p.rating} | Terjual ${p.sold}\n📍 ${p.location}\n📝 ${p.description}\n⚖️ Berat: ${p.weight}`); }));
+    
+    // Cart
     document.getElementById('cartIcon')?.addEventListener('click', () => { updateCartModalUI(); document.getElementById('cartModal').classList.remove('hidden'); });
     document.getElementById('closeCart')?.addEventListener('click', () => document.getElementById('cartModal').classList.add('hidden'));
-    document.getElementById('notifIcon')?.addEventListener('click', () => { document.getElementById('notifModal').classList.remove('hidden'); document.querySelectorAll('#notifList > div').forEach(div => { const id = parseInt(div.dataset.id); if (id) markNotifRead(id); }); updateNotifBadge(); renderApp(); });
+    document.getElementById('checkoutBtn')?.addEventListener('click', () => { if (carts.filter(c => c.userId === currentUser.id).length === 0) { showToast('Keranjang kosong', 'info'); return; } showCheckoutModal(); });
+    
+    // Notifications
+    document.getElementById('notifIcon')?.addEventListener('click', () => { document.getElementById('notifModal').classList.remove('hidden'); notifications.filter(n => n.userId === currentUser.id).forEach(n => n.read = true); saveAll(); updateNotifBadge(); renderApp(); });
     document.getElementById('closeNotif')?.addEventListener('click', () => document.getElementById('notifModal').classList.add('hidden'));
+    
+    // Dropdown menu buttons - SEMUA BISA DIKLIK
     document.getElementById('myOrdersBtn')?.addEventListener('click', () => document.getElementById('ordersModal').classList.remove('hidden'));
     document.getElementById('closeOrders')?.addEventListener('click', () => document.getElementById('ordersModal').classList.add('hidden'));
-    document.getElementById('addressBtn')?.addEventListener('click', () => document.getElementById('addressModal').classList.remove('hidden'));
-    document.getElementById('closeAddress')?.addEventListener('click', () => document.getElementById('addressModal').classList.add('hidden'));
     document.getElementById('wishlistBtn')?.addEventListener('click', () => document.getElementById('wishlistModal').classList.remove('hidden'));
     document.getElementById('closeWishlist')?.addEventListener('click', () => document.getElementById('wishlistModal').classList.add('hidden'));
     document.getElementById('voucherBtn')?.addEventListener('click', () => document.getElementById('voucherModal').classList.remove('hidden'));
     document.getElementById('closeVoucher')?.addEventListener('click', () => document.getElementById('voucherModal').classList.add('hidden'));
+    document.getElementById('addressBtn')?.addEventListener('click', () => document.getElementById('addressModal').classList.remove('hidden'));
+    document.getElementById('closeAddress')?.addEventListener('click', () => document.getElementById('addressModal').classList.add('hidden'));
+    document.getElementById('profileBtn')?.addEventListener('click', () => document.getElementById('profileModal').classList.remove('hidden'));
+    document.getElementById('closeProfile')?.addEventListener('click', () => document.getElementById('profileModal').classList.add('hidden'));
+    document.getElementById('settingsBtn')?.addEventListener('click', () => document.getElementById('settingsModal').classList.remove('hidden'));
+    document.getElementById('closeSettings')?.addEventListener('click', () => document.getElementById('settingsModal').classList.add('hidden'));
+    document.getElementById('faqBtn')?.addEventListener('click', () => document.getElementById('faqModal').classList.remove('hidden'));
+    document.getElementById('closeFaq')?.addEventListener('click', () => document.getElementById('faqModal').classList.add('hidden'));
     document.getElementById('logoutBtn')?.addEventListener('click', logout);
-    document.getElementById('backToLandingFromDash')?.addEventListener('click', () => { logout(); });
-    document.getElementById('applyVoucher')?.addEventListener('click', () => { const code = document.getElementById('voucherCode')?.value; const voucher = vouchers.find(v => v.code === code); if (voucher) { showToast(`Voucher ${code} berhasil diterapkan! Potongan ${formatRupiah(voucher.discount)}`, 'success'); } else { showToast('Kode voucher tidak valid', 'info'); } });
+    document.getElementById('logoDashboard')?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    
+    // Change password
+    document.getElementById('changePasswordBtn')?.addEventListener('click', () => { const oldPass = document.getElementById('oldPass').value; const newPass = document.getElementById('newPass').value; const confirm = document.getElementById('confirmPass').value; if (oldPass !== currentUser.password) { alert('Password lama salah'); return; } if (newPass !== confirm) { alert('Password baru tidak cocok'); return; } currentUser.password = newPass; users = users.map(u => u.id === currentUser.id ? currentUser : u); saveAll(); alert('Password berhasil diubah!'); document.getElementById('settingsModal').classList.add('hidden'); });
+    
+    // Remove wishlist
     document.querySelectorAll('.removeWishlistBtn').forEach(btn => btn.addEventListener('click', () => { wishlists = wishlists.filter(w => !(w.userId === currentUser.id && w.productId === parseInt(btn.dataset.id))); saveAll(); renderApp(); }));
-    document.querySelectorAll('.trackBtn').forEach(btn => btn.addEventListener('click', () => { const order = orders.find(o => o.id === parseInt(btn.dataset.id)); if (order) { document.getElementById('trackingInfo').innerHTML = `<div class="space-y-3"><div class="flex items-center gap-2"><div class="w-2 h-2 bg-green-500 rounded-full"></div><span>Pesanan diterima</span></div><div class="flex items-center gap-2"><div class="w-2 h-2 ${order.status !== 'Pending' ? 'bg-green-500' : 'bg-gray-300'} rounded-full"></div><span>Diproses</span></div><div class="flex items-center gap-2"><div class="w-2 h-2 ${order.status === 'Dikirim' ? 'bg-green-500' : 'bg-gray-300'} rounded-full"></div><span>Dikirim</span></div><div class="flex items-center gap-2"><div class="w-2 h-2 bg-gray-300 rounded-full"></div><span>Selesai</span></div></div><p class="text-sm text-gray-500 mt-3">No. Resi: ${order.trackingNumber || 'PANGANKU' + order.id}</p><p class="text-xs text-gray-400 mt-2">Estimasi tiba: ${new Date(Date.now() + 3*24*60*60*1000).toLocaleDateString('id-ID')}</p>`; document.getElementById('trackingModal').classList.remove('hidden'); } }));
+    
+    // Track order
+    document.querySelectorAll('.trackBtn').forEach(btn => btn.addEventListener('click', () => { const order = orders.find(o => o.id === parseInt(btn.dataset.id)); if (order) { document.getElementById('trackingInfo').innerHTML = `<div class="space-y-3"><div class="flex items-center gap-2"><div class="w-2 h-2 bg-green-500 rounded-full"></div><span>Pesanan diterima</span></div><div class="flex items-center gap-2"><div class="w-2 h-2 ${order.status !== 'Pending' ? 'bg-green-500' : 'bg-gray-300'} rounded-full"></div><span>Diproses</span></div><div class="flex items-center gap-2"><div class="w-2 h-2 ${order.status === 'Dikirim' ? 'bg-green-500' : 'bg-gray-300'} rounded-full"></div><span>Dikirim</span></div></div><p class="text-sm text-gray-500 mt-3">No. Resi: ${order.trackingNumber || 'PANGANKU' + order.id}</p><p class="text-xs text-gray-400">Estimasi tiba: ${new Date(Date.now() + 3*24*60*60*1000).toLocaleDateString()}</p>`; document.getElementById('trackingModal').classList.remove('hidden'); } }));
     document.getElementById('closeTracking')?.addEventListener('click', () => document.getElementById('trackingModal').classList.add('hidden'));
     
+    // Search
     const searchInput = document.getElementById('searchInput');
-    const categoryFilter = document.getElementById('categoryFilter');
-    const filterProducts = () => { const search = searchInput?.value.toLowerCase() || ''; const category = categoryFilter?.value || ''; const filtered = products.filter(p => p.stock > 0 && p.name.toLowerCase().includes(search) && (category === '' || p.category === category)); document.getElementById('productGrid').innerHTML = filtered.map(p => `<div class="bg-white rounded-xl overflow-hidden shadow-sm product-card" data-product='${JSON.stringify(p)}'><div class="h-36 flex items-center justify-center text-6xl bg-primaryLight">${p.image}</div><div class="p-3"><div class="flex justify-between"><h4 class="font-semibold text-sm">${p.name.substring(0, 20)}</h4><button class="wishlistBtn text-lg ${isInWishlist(p.id) ? 'text-red-500' : 'text-gray-300'}" data-id="${p.id}"><i class="fas fa-heart"></i></button></div><p class="text-primary font-bold">${formatRupiah(p.price)}</p><div class="flex items-center text-xs text-yellow-500"><i class="fas fa-star"></i> ${p.rating} (${p.sold} terjual)</div><button class="addToCartBtn w-full mt-2 bg-primary text-white text-xs py-1.5 rounded-lg" data-id="${p.id}">+ Keranjang</button></div></div>`).join(''); attachBuyerEvents(); };
-    searchInput?.addEventListener('input', filterProducts);
-    categoryFilter?.addEventListener('change', filterProducts);
-  }
-  
-  function showProductDetail(product) {
-    alert(`🛍️ ${product.name}\n💰 Harga: ${formatRupiah(product.price)}\n⭐ Rating: ${product.rating} (${product.sold} terjual)\n📍 ${product.location}\n📦 Berat: ${product.weight}\n📝 Deskripsi: ${product.description}\n🚚 Ongkir: ${formatRupiah(product.shippingCost || 8000)}`);
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => { const search = e.target.value.toLowerCase(); document.querySelectorAll('.product-card').forEach(card => { const name = card.querySelector('h4')?.innerText.toLowerCase(); card.style.display = name?.includes(search) ? 'block' : 'none'; }); });
+    }
   }
 
   function updateCartModalUI() {
     const userCart = carts.filter(c => c.userId === currentUser.id);
     const cartDiv = document.getElementById('cartItemsList');
     if (cartDiv) {
-      cartDiv.innerHTML = userCart.map(c => { const p = products.find(p => p.id === c.productId); return `<div class="flex justify-between items-center border-b py-3"><div><p class="font-medium">${p?.name}</p><p>${formatRupiah(p?.price)}</p><p class="text-xs text-gray-400">Stok: ${p?.stock}</p></div><div class="flex gap-2 items-center"><button class="qtyMinus w-7 h-7 rounded-full bg-gray-100" data-id="${c.productId}">-</button><span class="w-8 text-center">${c.qty}</span><button class="qtyPlus w-7 h-7 rounded-full bg-gray-100" data-id="${c.productId}">+</button><button class="removeCartItem text-red-500 ml-2" data-id="${c.productId}"><i class="fas fa-trash"></i></button></div></div>`; }).join('');
+      cartDiv.innerHTML = userCart.map(c => { const p = products.find(p => p.id === c.productId); return `<div class="flex justify-between items-center border-b py-3"><div><p class="font-medium">${p?.name}</p><p>${formatRupiah(p?.price)}</p></div><div class="flex gap-2 items-center"><button class="qtyMinus w-7 h-7 rounded-full bg-gray-100" data-id="${c.productId}">-</button><span class="w-8 text-center">${c.qty}</span><button class="qtyPlus w-7 h-7 rounded-full bg-gray-100" data-id="${c.productId}">+</button><button class="removeCartItem text-red-500 ml-2" data-id="${c.productId}"><i class="fas fa-trash"></i></button></div></div>`; }).join('');
       const subtotal = userCart.reduce((s, c) => s + (products.find(p=>p.id===c.productId)?.price * c.qty || 0), 0);
       const shipping = 10000;
       const total = subtotal + shipping;
@@ -320,28 +397,30 @@
     const shipping = 10000;
     const total = subtotal + shipping;
     const primaryAddr = addresses.find(a => a.userId === currentUser.id && a.isPrimary);
-    const modal = document.createElement('div'); modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center'; modal.innerHTML = `<div class="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-auto"><h2 class="text-xl font-bold mb-3">🛍️ Checkout</h2><div class="bg-gray-50 p-3 rounded-xl mb-3"><p class="text-sm font-medium">📍 Alamat Pengiriman</p><p class="text-sm">${primaryAddr?.address || 'Alamat belum diisi'}</p></div>${items.map(i => `<div class="flex justify-between py-2 text-sm"><span>${i.product.name} x${i.qty}</span><span>${formatRupiah(i.product.price * i.qty)}</span></div>`).join('')}<div class="flex justify-between py-1 text-sm border-t mt-2"><span>Ongkos Kirim</span><span>${formatRupiah(shipping)}</span></div><div class="flex justify-between py-2 font-bold text-lg"><span>Total</span><span>${formatRupiah(total)}</span></div><div class="mt-3"><label class="text-sm font-medium">Metode Pembayaran</label><select id="paymentMethod" class="w-full border rounded-xl p-2 mt-1"><option>QRIS (Scan QRIS)</option><option>Transfer Bank BCA/Mandiri</option><option>OVO / Dana / GoPay</option><option>COD (Bayar di Tempat)</option></select></div><div class="flex gap-3 mt-5"><button id="cancelCheckout" class="flex-1 border rounded-xl py-2">Batal</button><button id="confirmCheckout" class="flex-1 bg-accent text-white rounded-xl py-2">Pesan Sekarang</button></div></div>`;
+    const modal = document.createElement('div'); modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center'; modal.innerHTML = `<div class="bg-white rounded-2xl w-full max-w-md p-6"><h2 class="text-xl font-bold mb-3">🛍️ Checkout</h2><div class="bg-gray-50 p-3 rounded-xl mb-3"><p class="text-sm font-medium">📍 Alamat Pengiriman</p><p class="text-sm">${primaryAddr?.address || 'Alamat belum diisi'}</p></div>${items.map(i => `<div class="flex justify-between py-2 text-sm"><span>${i.product.name} x${i.qty}</span><span>${formatRupiah(i.product.price * i.qty)}</span></div>`).join('')}<div class="flex justify-between py-1 text-sm border-t mt-2"><span>Ongkos Kirim</span><span>${formatRupiah(shipping)}</span></div><div class="flex justify-between py-2 font-bold text-lg"><span>Total</span><span>${formatRupiah(total)}</span></div><div class="mt-3"><label class="text-sm font-medium">Metode Pembayaran</label><select id="paymentMethod" class="w-full border rounded-xl p-2 mt-1"><option>QRIS (Scan QRIS)</option><option>Transfer Bank BCA/Mandiri</option><option>OVO / Dana / GoPay</option><option>COD (Bayar di Tempat)</option></select></div><div class="flex gap-3 mt-5"><button id="cancelCheckout" class="flex-1 border rounded-xl py-2">Batal</button><button id="confirmCheckout" class="flex-1 bg-accent text-white rounded-xl py-2">Pesan Sekarang</button></div></div>`;
     document.body.appendChild(modal);
     document.getElementById('cancelCheckout')?.addEventListener('click', () => modal.remove());
-    document.getElementById('confirmCheckout')?.addEventListener('click', () => { 
-      for (const item of items) { 
-        const product = products.find(p => p.id === item.productId);
-        if (product) product.stock -= item.qty;
-        orders.push({ id: Date.now() + item.productId, buyerId: currentUser.id, sellerId: item.product.sellerId, productId: item.product.id, productName: item.product.name, qty: item.qty, total: item.product.price * item.qty, status: 'Diproses', paymentMethod: document.getElementById('paymentMethod').value, address: primaryAddr?.address, trackingNumber: 'TRK' + Date.now(), createdAt: new Date().toISOString() }); 
-        addNotif(item.product.sellerId, '🛒 Pesanan Baru!', `${currentUser.name} memesan ${item.product.name} x${item.qty} - total ${formatRupiah(item.product.price * item.qty)}`);
-        addNotif(currentUser.id, '✅ Pesanan Berhasil', `Pesanan ${item.product.name} telah dibuat. Silakan lakukan pembayaran.`);
-      } 
-      carts = carts.filter(c => c.userId !== currentUser.id); 
-      saveAll(); 
-      showToast('Pesanan berhasil dibuat! Cek "Pesanan Saya" untuk tracking', 'success'); 
-      modal.remove(); 
-      renderApp(); 
-    });
+    document.getElementById('confirmCheckout')?.addEventListener('click', () => { for (const item of items) { const product = products.find(p => p.id === item.productId); if (product) product.stock -= item.qty; orders.push({ id: Date.now() + item.productId, buyerId: currentUser.id, sellerId: item.product.sellerId, productId: item.product.id, productName: item.product.name, qty: item.qty, total: item.product.price * item.qty, status: 'Diproses', paymentMethod: document.getElementById('paymentMethod').value, address: primaryAddr?.address, trackingNumber: 'TRK' + Date.now(), createdAt: new Date().toISOString() }); addNotif(item.product.sellerId, '🛒 Pesanan Baru!', `${currentUser.name} memesan ${item.product.name} x${item.qty}`); addNotif(currentUser.id, '✅ Pesanan Berhasil', `Pesanan ${item.product.name} telah dibuat.`); } carts = carts.filter(c => c.userId !== currentUser.id); saveAll(); showToast('Pesanan berhasil dibuat! Cek "Pesanan Saya" untuk tracking', 'success'); modal.remove(); renderApp(); });
   }
 
-  function renderSellerApp(container) { const myProducts = products.filter(p => p.sellerId === currentUser.id); const incomingOrders = orders.filter(o => o.sellerId === currentUser.id); container.innerHTML = `<div class="min-h-screen bg-grayBg p-4"><div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-primary">PanganKu | ${currentUser.businessName || 'UMKM'}</h1><button id="logoutBtn" class="bg-red-100 px-4 py-2 rounded-full">Keluar</button></div><div class="grid md:grid-cols-3 gap-4"><div class="bg-white p-5 rounded-2xl shadow"><h2 class="font-bold">📊 Pesanan Masuk</h2><p class="text-2xl text-primary">${incomingOrders.length}</p></div><div class="bg-white p-5 rounded-2xl shadow"><h2 class="font-bold">🛍️ Produk Aktif</h2><p class="text-2xl text-primary">${myProducts.length}</p></div><div class="bg-white p-5 rounded-2xl shadow"><h2 class="font-bold">⭐ Rating Toko</h2><p class="text-2xl text-accent">4.9</p></div></div><div class="mt-8 bg-white rounded-2xl p-5"><div class="flex justify-between"><h2 class="font-bold">📦 Kelola Produk</h2><button id="addProductBtn" class="bg-primary text-white px-4 py-1 rounded-full">+ Tambah Produk</button></div><div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">${myProducts.map(p => `<div class="border rounded-xl p-3"><div class="text-4xl">${p.image}</div><p class="font-semibold text-sm">${p.name}</p><p>${formatRupiah(p.price)}</p><p class="text-xs text-gray-500">Stok: ${p.stock}</p><button class="deleteProdBtn text-red-500 text-sm" data-id="${p.id}">Hapus</button></div>`).join('')}</div></div><div class="mt-6 bg-white rounded-2xl p-5"><h2 class="font-bold">📋 Daftar Pesanan</h2>${incomingOrders.map(o => `<div class="border-b py-3"><p><strong>${o.productName}</strong> x${o.qty}</p><p class="text-sm">Total: ${formatRupiah(o.total)}</p><p class="text-xs text-gray-500">Pembeli: ${users.find(u=>u.id===o.buyerId)?.name}</p><button class="updateStatusBtn bg-primary text-white text-xs px-3 py-1 rounded mt-1" data-id="${o.id}">Proses Pesanan</button></div>`).join('') || '<p class="text-gray-400">Belum ada pesanan masuk</p>'}</div></div>`; document.getElementById('addProductBtn')?.addEventListener('click', () => { const name = prompt('Nama produk'); const price = parseInt(prompt('Harga (Rp)')); if (name && price) { products.push({ id: Date.now(), name, price, rating: 0, sold: 0, image: '🍱', sellerId: currentUser.id, sellerName: currentUser.businessName, stock: 10, description: 'Produk baru', location: 'Indonesia', weight: '200g', category: 'Makanan', shippingCost: 8000 }); saveAll(); renderApp(); } }); document.querySelectorAll('.deleteProdBtn').forEach(btn => btn.addEventListener('click', () => { products = products.filter(p => p.id !== parseInt(btn.dataset.id)); saveAll(); renderApp(); })); document.querySelectorAll('.updateStatusBtn').forEach(btn => btn.addEventListener('click', () => { const order = orders.find(o => o.id === parseInt(btn.dataset.id)); if (order && order.status === 'Diproses') { order.status = 'Dikirim'; order.trackingNumber = 'TRK' + Date.now(); addNotif(order.buyerId, '📦 Pesanan Dikirim', `Pesanan ${order.productName} sedang dalam perjalanan. No resi: ${order.trackingNumber}`); saveAll(); renderApp(); } })); document.getElementById('logoutBtn')?.addEventListener('click', logout); }
-  
-  function renderFarmerApp(container) { const myCrops = products.filter(p => p.sellerId === currentUser.id); container.innerHTML = `<div class="min-h-screen bg-grayBg p-4"><div class="flex justify-between items-center"><h1 class="text-2xl font-bold text-primary">PanganKu | ${currentUser.farmName || 'Petani'}</h1><button id="logoutBtn" class="bg-red-100 px-4 py-2 rounded-full">Keluar</button></div><div class="mt-6 grid md:grid-cols-2 gap-4"><div class="bg-white p-5 rounded-2xl"><i class="fas fa-tractor text-3xl text-primary"></i><p class="text-2xl font-bold">${myCrops.length}</p><p>Komoditas Aktif</p></div><div class="bg-white p-5 rounded-2xl"><i class="fas fa-chart-line text-3xl text-accent"></i><p class="text-2xl font-bold">+42%</p><p>Permintaan Bulan Ini</p></div></div><div class="mt-6 bg-white rounded-2xl p-5"><div class="flex justify-between"><h2 class="font-bold">🌾 Kelola Hasil Panen</h2><button id="addCropBtn" class="bg-primary text-white px-4 py-1 rounded-full">+ Tambah Komoditas</button></div><div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">${myCrops.map(c => `<div class="border p-3 rounded-xl"><div class="text-4xl">🌽</div><p class="font-semibold text-sm">${c.name}</p><p>${formatRupiah(c.price)}</p><p class="text-xs text-gray-500">Stok: ${c.stock}</p><button class="deleteCropBtn text-red-500 text-sm" data-id="${c.id}">Hapus</button></div>`).join('')}</div></div><div class="mt-6 bg-white rounded-2xl p-5"><h2 class="font-bold">💡 Rekomendasi Pasar</h2><p>✅ Sayuran organik diminati tinggi (+35% permintaan)</p><p>✅ Cabai rawit diprediksi naik harga</p><p>✅ Tomat cherry sedang tren</p></div></div>`; document.getElementById('addCropBtn')?.addEventListener('click', () => { const name = prompt('Nama komoditas'); const price = parseInt(prompt('Harga per kg (Rp)')); if (name && price) { products.push({ id: Date.now(), name, price, rating: 0, sold: 0, image: '🌽', sellerId: currentUser.id, sellerName: currentUser.farmName, stock: 100, description: 'Panen segar langsung dari kebun', location: 'Bogor', weight: '1kg', category: 'Sayuran', shippingCost: 8000 }); saveAll(); renderApp(); } }); document.querySelectorAll('.deleteCropBtn').forEach(btn => btn.addEventListener('click', () => { products = products.filter(p => p.id !== parseInt(btn.dataset.id)); saveAll(); renderApp(); })); document.getElementById('logoutBtn')?.addEventListener('click', logout); }
+  // ========== SELLER & FARMER DASHBOARD ==========
+  function renderSellerApp(container) {
+    const myProducts = products.filter(p => p.sellerId === currentUser.id);
+    const incomingOrders = orders.filter(o => o.sellerId === currentUser.id);
+    container.innerHTML = `<div class="min-h-screen bg-grayBg p-4"><div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold text-primary">PanganKu | ${currentUser.businessName || 'UMKM'}</h1><button id="logoutBtn" class="bg-red-100 px-4 py-2 rounded-full">Keluar</button></div><div class="grid md:grid-cols-3 gap-4 mb-6"><div class="bg-white p-5 rounded-2xl"><p class="text-2xl text-primary">${incomingOrders.length}</p><p>Pesanan Masuk</p></div><div class="bg-white p-5 rounded-2xl"><p class="text-2xl text-primary">${myProducts.length}</p><p>Produk Aktif</p></div></div><div class="bg-white rounded-2xl p-5 mb-6"><div class="flex justify-between"><h2 class="font-bold">📦 Kelola Produk</h2><button id="addProductBtn" class="bg-primary text-white px-4 py-1 rounded-full">+ Tambah</button></div><div class="grid grid-cols-4 gap-3 mt-4">${myProducts.map(p => `<div class="border p-2 rounded-xl"><div class="text-3xl">${p.image}</div><p class="font-semibold text-sm">${p.name}</p><p>${formatRupiah(p.price)}</p><button class="deleteProdBtn text-red-500 text-xs" data-id="${p.id}">Hapus</button></div>`).join('')}</div></div><div class="bg-white rounded-2xl p-5"><h2 class="font-bold">📋 Pesanan Masuk</h2>${incomingOrders.map(o => `<div class="border-b py-2"><p>${o.productName} x${o.qty} - ${formatRupiah(o.total)}</p><button class="updateStatusBtn bg-primary text-white text-xs px-3 py-1 rounded mt-1" data-id="${o.id}">Proses</button></div>`).join('')}</div></div>`;
+    document.getElementById('addProductBtn')?.addEventListener('click', () => { const name = prompt('Nama produk'); const price = parseInt(prompt('Harga')); if (name && price) { products.push({ id: Date.now(), name, price, rating: 0, sold: 0, image: '🍱', sellerId: currentUser.id, sellerName: currentUser.businessName, stock: 10, description: 'Produk baru', location: 'Indonesia' }); saveAll(); renderApp(); } });
+    document.querySelectorAll('.deleteProdBtn').forEach(btn => btn.addEventListener('click', () => { products = products.filter(p => p.id !== parseInt(btn.dataset.id)); saveAll(); renderApp(); }));
+    document.querySelectorAll('.updateStatusBtn').forEach(btn => btn.addEventListener('click', () => { const order = orders.find(o => o.id === parseInt(btn.dataset.id)); if (order && order.status === 'Diproses') { order.status = 'Dikirim'; addNotif(order.buyerId, '📦 Pesanan Dikirim', `Pesanan ${order.productName} sedang dikirim`); saveAll(); renderApp(); } }));
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+  }
+
+  function renderFarmerApp(container) {
+    const myCrops = products.filter(p => p.sellerId === currentUser.id);
+    container.innerHTML = `<div class="min-h-screen bg-grayBg p-4"><div class="flex justify-between items-center"><h1 class="text-2xl font-bold text-primary">PanganKu | ${currentUser.farmName || 'Petani'}</h1><button id="logoutBtn" class="bg-red-100 px-4 py-2 rounded-full">Keluar</button></div><div class="grid md:grid-cols-2 gap-4 mt-6"><div class="bg-white p-5 rounded-2xl"><p class="text-2xl text-primary">${myCrops.length}</p><p>Komoditas</p></div><div class="bg-white p-5 rounded-2xl"><p class="text-2xl text-accent">+42%</p><p>Permintaan</p></div></div><div class="mt-6 bg-white rounded-2xl p-5"><div class="flex justify-between"><h2 class="font-bold">🌾 Hasil Panen</h2><button id="addCropBtn" class="bg-primary text-white px-4 py-1 rounded-full">+ Tambah</button></div><div class="grid grid-cols-4 gap-3 mt-4">${myCrops.map(c => `<div class="border p-2 rounded-xl"><div class="text-3xl">🌽</div><p class="font-semibold text-sm">${c.name}</p><p>${formatRupiah(c.price)}</p><button class="deleteCropBtn text-red-500 text-xs" data-id="${c.id}">Hapus</button></div>`).join('')}</div></div><div class="mt-6 bg-white rounded-2xl p-5"><h2 class="font-bold">💡 Rekomendasi Pasar</h2><p>✅ Sayuran organik diminati tinggi</p><p>✅ Cabai rawit diprediksi naik</p></div></div>`;
+    document.getElementById('addCropBtn')?.addEventListener('click', () => { const name = prompt('Nama komoditas'); const price = parseInt(prompt('Harga per kg')); if (name && price) { products.push({ id: Date.now(), name, price, rating: 0, sold: 0, image: '🌽', sellerId: currentUser.id, sellerName: currentUser.farmName, stock: 100, description: 'Panen segar', location: 'Bogor' }); saveAll(); renderApp(); } });
+    document.querySelectorAll('.deleteCropBtn').forEach(btn => btn.addEventListener('click', () => { products = products.filter(p => p.id !== parseInt(btn.dataset.id)); saveAll(); renderApp(); }));
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+  }
 
   renderApp();
 </script>
