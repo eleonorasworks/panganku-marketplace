@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kelola Landing Page — PanganKu</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --g1:#2D7A3A;--g2:#1E5C28;--g3:#EAF5EB;--g4:#B8DFB8;
+  --o1:#E8612A;--o2:#C04E20;--o3:#FEF0E8;
+  --a1:#B07000;--a2:#FEF3E2;
+  --bg:#F5F7FA;--card:#fff;
+  --border:#E5E9F0;--border2:#CDD3DF;
+  --txt:#1A1F2E;--txt2:#5A6478;--txt3:#9BA3B5;
+  --err:#DC2626;--errb:#FEF2F2;
+  --blue:#2563EB;--blueb:#EFF6FF;
+  --side:240px;
+}
+body{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--txt);background:var(--bg);display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+aside{width:var(--side);background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50;transition:transform .25s;}
+.brand{padding:20px 18px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.brand-logo{width:34px;height:34px;background:var(--g2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;font-weight:800;flex-shrink:0;}
+.brand-name{font-size:15px;font-weight:800;color:var(--g2);}
+.brand-sub{font-size:10px;color:var(--txt3);font-weight:500;}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0;}
+.side-section{font-size:10px;font-weight:700;color:var(--txt3);padding:10px 18px 4px;letter-spacing:.6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 18px;cursor:pointer;font-size:13px;font-weight:500;color:var(--txt2);border-left:3px solid transparent;transition:all .12s;border-radius:0 8px 8px 0;margin:1px 6px 1px 0;}
+.nav-item:hover{background:var(--bg);color:var(--g1);}
+.nav-item.on{background:var(--g3);color:var(--g1);border-left-color:var(--g1);font-weight:600;}
+.nav-item .ico{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.nav-badge{margin-left:auto;background:var(--o1);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;}
+.side-footer{padding:14px 18px;border-top:1px solid var(--border);}
+.admin-info{display:flex;align-items:center;gap:9px;}
+.admin-av{width:32px;height:32px;border-radius:50%;background:var(--g3);color:var(--g1);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.admin-name{font-size:12px;font-weight:600;}
+.admin-role{font-size:10px;color:var(--txt3);}
+
+/* MAIN */
+main{margin-left:var(--side);flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40;}
+.topbar-left h1{font-size:17px;font-weight:700;}
+.topbar-left p{font-size:12px;color:var(--txt3);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.t-btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--txt2);display:inline-flex;align-items:center;gap:6px;transition:all .14s;}
+.t-btn:hover{border-color:var(--border2);background:var(--bg);}
+.t-btn.primary{background:var(--g1);border-color:var(--g1);color:#fff;}
+.t-btn.primary:hover{background:var(--g2);}
+.t-btn.danger{background:var(--err);border-color:var(--err);color:#fff;}
+.page-body{padding:24px 28px;flex:1;}
+
+/* SECTIONS */
+.sec{display:none;}
+.sec.on{display:block;}
+
+/* CARDS & LAYOUT */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;}
+.kpi-label{font-size:11px;color:var(--txt3);font-weight:500;margin-bottom:6px;}
+.kpi-val{font-size:24px;font-weight:800;margin-bottom:4px;}
+.kpi-change{font-size:11px;font-weight:500;}
+.kpi-change.up{color:var(--g1);}
+.kpi-change.dn{color:var(--err);}
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-head h3{font-size:14px;font-weight:700;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead tr{background:var(--bg);}
+th{text-align:left;padding:9px 12px;font-weight:600;color:var(--txt3);font-size:11px;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid #F0F3F8;color:var(--txt2);}
+tr:last-child td{border:none;}
+tr:hover td{background:#FAFBFC;}
+
+/* BADGE */
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;}
+.badge-green{background:var(--g3);color:var(--g2);}
+.badge-yellow{background:var(--a2);color:var(--a1);}
+.badge-red{background:var(--errb);color:var(--err);}
+.badge-blue{background:var(--blueb);color:var(--blue);}
+.badge-gray{background:#F0F3F8;color:var(--txt3);}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fg{margin-bottom:14px;}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--txt2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px;}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border2);border-radius:8px;font-size:13px;font-family:inherit;color:var(--txt);outline:none;transition:border-color .14s;background:#fff;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--g1);}
+.fg textarea{resize:vertical;min-height:80px;}
+.fg-hint{font-size:11px;color:var(--txt3);margin-top:4px;}
+.switch-row{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border);}
+.switch-info h4{font-size:13px;font-weight:600;}
+.switch-info p{font-size:11px;color:var(--txt3);margin-top:2px;}
+.toggle{position:relative;width:42px;height:24px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-slider{position:absolute;inset:0;background:#D0D5E0;border-radius:12px;cursor:pointer;transition:.3s;}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle input:checked+.toggle-slider{background:var(--g1);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px);}
+.btn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid;display:inline-flex;align-items:center;gap:6px;transition:all .14s;font-family:inherit;}
+.btn-g{background:var(--g1);border-color:var(--g1);color:#fff;}
+.btn-g:hover{background:var(--g2);}
+.btn-o{background:var(--o1);border-color:var(--o1);color:#fff;}
+.btn-o:hover{background:var(--o2);}
+.btn-out{background:#fff;border-color:var(--border2);color:var(--txt2);}
+.btn-out:hover{background:var(--bg);}
+.btn-danger{background:var(--err);border-color:var(--err);color:#fff;}
+.btn-sm{padding:5px 12px;font-size:11px;border-radius:6px;}
+.action-row{display:flex;gap:6px;}
+
+/* CHART BARS */
+.chart-bars{display:flex;align-items:flex-end;gap:8px;height:120px;padding-bottom:20px;position:relative;}
+.cbar{flex:1;border-radius:4px 4px 0 0;position:relative;min-width:0;cursor:pointer;transition:opacity .15s;}
+.cbar:hover{opacity:.85;}
+.cbar-lbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--txt3);white-space:nowrap;}
+.cbar-val{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;white-space:nowrap;}
+
+/* MINI CHART */
+.sparkline{display:flex;align-items:flex-end;gap:3px;height:40px;}
+.spark{flex:1;background:var(--g3);border-radius:2px;min-height:4px;}
+
+/* AVATAR */
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+
+/* TOAST */
+#toast{position:fixed;bottom:28px;right:28px;background:#1A1F2E;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.on{display:flex;}
+.modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.modal-head h2{font-size:16px;font-weight:700;}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--txt3);padding:4px;}
+.modal-close:hover{color:var(--txt);}
+
+/* SEARCH BAR */
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:0 12px;height:36px;}
+.search-bar input{border:none;background:transparent;outline:none;font-size:13px;flex:1;font-family:inherit;color:var(--txt);}
+
+/* ACTIVITY FEED */
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #F0F3F8;}
+.activity-item:last-child{border:none;}
+.act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.act-content{flex:1;}
+.act-title{font-size:12px;font-weight:500;}
+.act-time{font-size:11px;color:var(--txt3);margin-top:2px;}
+.act-val{font-size:12px;font-weight:700;}
+
+/* PRODUCT IMAGE PLACEHOLDER */
+.prod-thumb{width:40px;height:40px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+
+/* PROGRESS */
+.progress{height:6px;background:#F0F3F8;border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s;}
+
+/* LANDING PAGE EDITOR SPECIFIC */
+.lp-section-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;transition:border-color .15s;}
+.lp-section-card:hover{border-color:var(--border2);}
+.lp-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.lp-sec-name{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.lp-sec-ico{font-size:18px;}
+.color-swatch{width:28px;height:28px;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px var(--border);cursor:pointer;transition:transform .15s;}
+.color-swatch:hover{transform:scale(1.1);}
+.color-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brand">
+    <div class="brand-logo">PK</div>
+    <div>
+      <div class="brand-name">PanganKu</div>
+      <div class="brand-sub">Kelola Landing Page</div>
+    </div>
+  </div>
+  <div class="side-scroll">
+    <div class="side-section">Landing Page</div>
+    <div class="nav-item on" onclick="goSec(this,'sec-lp-konten')"><span class="ico">📝</span> Konten & Teks</div>
+    <div class="nav-item" onclick="goSec(this,'sec-lp-stats')"><span class="ico">🔢</span> Angka & Statistik</div>
+    <div class="nav-item" onclick="goSec(this,'sec-lp-design')"><span class="ico">🎨</span> Tampilan & Warna</div>
+    <div class="nav-item" onclick="goSec(this,'sec-lp-cta')"><span class="ico">🚀</span> Tombol & CTA</div>
+  </div>
+  <div class="side-footer">
+    <div class="admin-info">
+      <div class="admin-av">SA</div>
+      <div><div class="admin-name">Super Admin</div><div class="admin-role">admin@panganku.id</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main>
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 id="topbar-title">Landing Page › Konten & Teks</h1>
+      <p id="topbar-sub">Edit teks dan konten di setiap bagian landing page</p>
+    </div>
+    <div class="topbar-right">
+      <button class="t-btn primary" onclick="window.open('landing_page.html','_blank')">🌐 Lihat Landing Page</button>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <!-- ===== LANDING PAGE: KONTEN ===== -->
+    <div class="sec on" id="sec-lp-konten">
+      <div style="background:#E8F0FE;border:1px solid #BFDBFE;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13px;color:var(--blue);">
+        ℹ️ Perubahan di sini akan langsung terlihat di Landing Page PanganKu saat disimpan.
+      </div>
+      <div class="lp-section-card">
+        <div class="lp-sec-head">
+          <div class="lp-sec-name"><span class="lp-sec-ico">🦸</span> Bagian Hero (Halaman Utama)</div>
+          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="form-grid">
+          <div class="fg"><label>Judul Utama (Baris 1)</label><input type="text" id="f-hero-title" value="Pangan **Segar** Langsung dari Petani ke Piringmu"><div class="fg-hint">Apit kata dengan **kata** untuk warna kuning (highlight)</div></div>
+          <div class="fg"><label>Badge / Label Kecil</label><input type="text" id="f-hero-badge" value="Marketplace Pangan Lokal Pertama di Indonesia"></div>
+        </div>
+        <div class="fg"><label>Deskripsi Hero</label><textarea id="f-hero-desc">PanganKu menghubungkan petani lokal dan UMKM pangan dengan jutaan pembeli di seluruh Indonesia. Tanpa perantara, harga lebih adil, kualitas lebih terjamin.</textarea></div>
+        <div class="form-grid">
+          <div class="fg"><label>Teks Tombol Utama</label><input type="text" id="f-hero-btn1-text" value="🛒 Mulai Belanja Sekarang"></div>
+          <div class="fg"><label>URL Tombol Utama</label><input type="text" id="f-hero-btn1-url" value="panganku_v3_full__4_.html"></div>
+        </div>
+        <div class="form-grid">
+          <div class="fg"><label>Teks Tombol Sekunder</label><input type="text" id="f-hero-btn2-text" value="Lihat cara kerjanya"></div>
+          <div class="fg"><label>Anchor/URL Tombol Sekunder</label><input type="text" id="f-hero-btn2-url" value="#cara-kerja"></div>
+        </div>
+      </div>
+      <div class="lp-section-card">
+        <div class="lp-sec-head">
+          <div class="lp-sec-name"><span class="lp-sec-ico">❓</span> Bagian Masalah (Mengapa Ada)</div>
+          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="fg"><label>Judul Bagian</label><input type="text" id="f-problem-title" value="Petani Lokal Layak Dapat Harga yang Lebih Adil"></div>
+        <div class="fg"><label>Paragraf Pertama</label><textarea id="f-problem-p1">Selama ini, petani dan pelaku UMKM pangan di Indonesia harus melewati rantai distribusi yang panjang — dari petani ke pengepul, ke distributor, ke pengecer, baru ke konsumen. Setiap perantara mengambil margin, sehingga petani mendapat sangat sedikit dan konsumen membayar sangat banyak.</textarea></div>
+        <div class="fg"><label>Paragraf Kedua</label><textarea id="f-problem-p2">PanganKu hadir untuk memotong rantai ini. Kami membangun jembatan digital langsung antara produsen dan konsumen, sehingga keduanya sama-sama diuntungkan.</textarea></div>
+      </div>
+      <div class="lp-section-card">
+        <div class="lp-sec-head">
+          <div class="lp-sec-name"><span class="lp-sec-ico">🎯</span> Bagian Fitur</div>
+          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="form-grid">
+          <div class="fg"><label>Judul Bagian</label><input type="text" id="f-fitur-title" value="Semua yang Kamu Butuhkan Ada di Sini"></div>
+          <div class="fg"><label>Deskripsi Singkat</label><input type="text" id="f-fitur-desc" value="Dari belanja produk segar hingga mengelola toko UMKM, PanganKu menyediakan ekosistem lengkap untuk pangan lokal Indonesia."></div>
+        </div>
+        <div style="font-size:12px;font-weight:600;color:var(--txt3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.3px;">Fitur-Fitur (Kartu)</div>
+        <div style="display:flex;flex-direction:column;gap:8px;" id="fiturList">
+          <div style="display:grid;grid-template-columns:40px 1fr 1fr auto;gap:8px;align-items:center;background:var(--bg);padding:10px;border-radius:8px;">
+            <input type="text" value="🛒" style="text-align:center;padding:5px;border:1.5px solid var(--border2);border-radius:6px;font-size:18px;font-family:inherit;">
+            <input type="text" value="Marketplace Multi-Kategori" style="padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;">
+            <input type="text" value="Sayur, buah, beras, rempah, olahan UMKM..." style="padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;">
+            <button class="btn btn-sm btn-danger" onclick="toast('Fitur dihapus.')">✕</button>
+          </div>
+          <div style="display:grid;grid-template-columns:40px 1fr 1fr auto;gap:8px;align-items:center;background:var(--bg);padding:10px;border-radius:8px;">
+            <input type="text" value="🌾" style="text-align:center;padding:5px;border:1.5px solid var(--border2);border-radius:6px;font-size:18px;font-family:inherit;">
+            <input type="text" value="Langsung dari Petani" style="padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;">
+            <input type="text" value="Setiap produk terhubung ke profil petani asli..." style="padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;">
+            <button class="btn btn-sm btn-danger" onclick="toast('Fitur dihapus.')">✕</button>
+          </div>
+        </div>
+        <button class="btn btn-out btn-sm" style="margin-top:10px;" onclick="toast('Fitur baru ditambahkan!')">+ Tambah Fitur</button>
+      </div>
+      <div class="lp-section-card">
+        <div class="lp-sec-head">
+          <div class="lp-sec-name"><span class="lp-sec-ico">💬</span> Testimoni</div>
+          <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="background:var(--bg);padding:14px;border-radius:8px;border:1px solid var(--border);">
+            <div class="form-grid" style="margin-bottom:8px;">
+              <div class="fg" style="margin:0;"><label>Nama</label><input type="text" value="Pak Joko Santoso"></div>
+              <div class="fg" style="margin:0;"><label>Peran</label><input type="text" value="Petani Sayur Organik · Bandung"></div>
+            </div>
+            <div class="fg" style="margin:0;"><label>Kutipan</label><textarea style="min-height:60px;">Sejak pakai PanganKu, sayur dari kebun saya langsung sampai ke pembeli tanpa lewat pengepul. Pendapatan saya naik hampir 40% dalam 3 bulan pertama!</textarea></div>
+          </div>
+        </div>
+        <button class="btn btn-out btn-sm" style="margin-top:10px;" onclick="toast('Testimoni baru ditambahkan!')">+ Tambah Testimoni</button>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-out" onclick="toast('Perubahan dibuang.')">Batal</button>
+        <button class="btn btn-g" onclick="simpanKonten()">💾 Simpan Konten</button>
+      </div>
+    </div>
+
+    <!-- ===== LANDING PAGE: STATS ===== -->
+    <div class="sec" id="sec-lp-stats">
+      <div class="card">
+        <div class="card-head"><h3>Angka Statistik di Landing Page</h3></div>
+        <p style="font-size:13px;color:var(--txt3);margin-bottom:18px;">Angka-angka ini tampil di bagian stats bar berwarna oranye pada landing page.</p>
+        <div class="g4">
+          <div class="fg"><label>Pembeli Aktif</label><input type="text" id="f-stat-num-1" value="50.000+"></div>
+          <div class="fg"><label>Petani & UMKM Mitra</label><input type="text" id="f-stat-num-2" value="340+"></div>
+          <div class="fg"><label>Produk Tersedia</label><input type="text" id="f-stat-num-3" value="1.200+"></div>
+          <div class="fg"><label>Jangkauan</label><input type="text" id="f-stat-num-4" value="27 Provinsi"></div>
+        </div>
+        <div class="g4">
+          <div class="fg"><label>Label 1</label><input type="text" id="f-stat-lbl-1" value="Pembeli aktif"></div>
+          <div class="fg"><label>Label 2</label><input type="text" id="f-stat-lbl-2" value="Petani & UMKM mitra"></div>
+          <div class="fg"><label>Label 3</label><input type="text" id="f-stat-lbl-3" value="Produk tersedia"></div>
+          <div class="fg"><label>Label 4</label><input type="text" id="f-stat-lbl-4" value="Jangkauan pengiriman"></div>
+        </div>
+        <div style="text-align:right;"><button class="btn btn-g" onclick="simpanStats()">💾 Simpan Statistik</button></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Kartu Preview Marketplace (di Hero)</h3></div>
+        <p style="font-size:13px;color:var(--txt3);margin-bottom:18px;">Produk sampel yang ditampilkan di kartu preview pada hero landing page.</p>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:grid;grid-template-columns:50px 1fr 1fr 120px;gap:8px;align-items:center;background:var(--bg);padding:10px;border-radius:8px;">
+            <input type="text" value="🥬" style="text-align:center;padding:5px;border:1.5px solid var(--border2);border-radius:6px;font-size:20px;font-family:inherit;">
+            <input type="text" value="Bayam Organik Segar" style="padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;" placeholder="Nama produk">
+            <input type="text" value="Kebun Pak Joko · Bandung" style="padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;" placeholder="Penjual · Lokasi">
+            <input type="text" value="Rp 8.500" style="padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;" placeholder="Harga">
+          </div>
+          <div style="display:grid;grid-template-columns:50px 1fr 1fr 120px;gap:8px;align-items:center;background:var(--bg);padding:10px;border-radius:8px;">
+            <input type="text" value="🌾" style="text-align:center;padding:5px;border:1.5px solid var(--border2);border-radius:6px;font-size:20px;font-family:inherit;">
+            <input type="text" value="Beras Pandan Wangi Premium" style="padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;" placeholder="Nama produk">
+            <input type="text" value="Sawah Organik Sari · Karawang" style="padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;" placeholder="Penjual · Lokasi">
+            <input type="text" value="Rp 56.000" style="padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;" placeholder="Harga">
+          </div>
+        </div>
+        <div style="text-align:right;margin-top:12px;"><button class="btn btn-g" onclick="toast('✅ Preview produk berhasil disimpan!')">💾 Simpan</button></div>
+      </div>
+    </div>
+
+    <!-- ===== LANDING PAGE: DESIGN ===== -->
+    <div class="sec" id="sec-lp-design">
+      <div class="card">
+        <div class="card-head"><h3>Warna & Tema</h3></div>
+        <div class="g3">
+          <div class="fg"><label>Warna Utama (Hijau)</label><div style="display:flex;gap:8px;align-items:center;"><input type="color" id="f-color-primary" value="#2D7A3A" style="width:50px;height:36px;border:1.5px solid var(--border2);border-radius:6px;cursor:pointer;" oninput="document.getElementById('f-color-primary-txt').value=this.value"><input type="text" id="f-color-primary-txt" value="#2D7A3A" style="flex:1;padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;" oninput="document.getElementById('f-color-primary').value=this.value"></div></div>
+          <div class="fg"><label>Warna Aksen (Oranye)</label><div style="display:flex;gap:8px;align-items:center;"><input type="color" id="f-color-accent" value="#E8612A" style="width:50px;height:36px;border:1.5px solid var(--border2);border-radius:6px;cursor:pointer;" oninput="document.getElementById('f-color-accent-txt').value=this.value"><input type="text" id="f-color-accent-txt" value="#E8612A" style="flex:1;padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;" oninput="document.getElementById('f-color-accent').value=this.value"></div></div>
+          <div class="fg"><label>Warna Latar</label><div style="display:flex;gap:8px;align-items:center;"><input type="color" id="f-color-bg" value="#FDFAF5" style="width:50px;height:36px;border:1.5px solid var(--border2);border-radius:6px;cursor:pointer;" oninput="document.getElementById('f-color-bg-txt').value=this.value"><input type="text" id="f-color-bg-txt" value="#FDFAF5" style="flex:1;padding:6px 10px;border:1.5px solid var(--border2);border-radius:6px;font-size:13px;font-family:inherit;" oninput="document.getElementById('f-color-bg').value=this.value"></div></div>
+        </div>
+        <div style="text-align:right;"><button class="btn btn-g" onclick="simpanWarna()">Terapkan Warna</button></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Pengaturan Bagian Landing Page</h3></div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="switch-row"><div class="switch-info"><h4>Tampilkan Bagian Hero</h4><p>Banner utama dengan gambar dan tombol CTA</p></div><label class="toggle"><input type="checkbox" id="f-vis-hero" checked onchange="simpanVisibilitas()"><span class="toggle-slider"></span></label></div>
+          <div class="switch-row"><div class="switch-info"><h4>Tampilkan Stats Bar</h4><p>Angka statistik berwarna oranye di bawah hero</p></div><label class="toggle"><input type="checkbox" id="f-vis-statsbar" checked onchange="simpanVisibilitas()"><span class="toggle-slider"></span></label></div>
+          <div class="switch-row"><div class="switch-info"><h4>Tampilkan Bagian Masalah</h4><p>Penjelasan mengapa PanganKu ada</p></div><label class="toggle"><input type="checkbox" id="f-vis-masalah" checked onchange="simpanVisibilitas()"><span class="toggle-slider"></span></label></div>
+          <div class="switch-row"><div class="switch-info"><h4>Tampilkan Fitur Platform</h4><p>Kartu-kartu fitur PanganKu</p></div><label class="toggle"><input type="checkbox" id="f-vis-fitur" checked onchange="simpanVisibilitas()"><span class="toggle-slider"></span></label></div>
+          <div class="switch-row"><div class="switch-info"><h4>Tampilkan Cara Kerja</h4><p>4 langkah cara menggunakan PanganKu</p></div><label class="toggle"><input type="checkbox" id="f-vis-carakerja" checked onchange="simpanVisibilitas()"><span class="toggle-slider"></span></label></div>
+          <div class="switch-row"><div class="switch-info"><h4>Tampilkan Untuk Siapa</h4><p>Penjelasan target pengguna</p></div><label class="toggle"><input type="checkbox" id="f-vis-siapa" checked onchange="simpanVisibilitas()"><span class="toggle-slider"></span></label></div>
+          <div class="switch-row"><div class="switch-info"><h4>Tampilkan Testimoni</h4><p>Ulasan dari pengguna nyata</p></div><label class="toggle"><input type="checkbox" id="f-vis-testimoni" checked onchange="simpanVisibilitas()"><span class="toggle-slider"></span></label></div>
+          <div class="switch-row"><div class="switch-info"><h4>Tampilkan Bagian CTA</h4><p>Tombol ajakan berlangganan di bagian bawah</p></div><label class="toggle"><input type="checkbox" id="f-vis-cta" checked onchange="simpanVisibilitas()"><span class="toggle-slider"></span></label></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== LANDING PAGE: CTA ===== -->
+    <div class="sec" id="sec-lp-cta">
+      <div class="card">
+        <div class="card-head"><h3>Tombol & Call-to-Action</h3></div>
+        <div class="lp-section-card">
+          <div class="lp-sec-name" style="margin-bottom:14px;"><span class="lp-sec-ico">🟢</span> Tombol Utama (Hero)</div>
+          <div class="form-grid">
+            <div class="fg"><label>Teks Tombol</label><input type="text" id="f-cta-hero-btn1-text" value="🛒 Mulai Belanja Sekarang"></div>
+            <div class="fg"><label>URL Tujuan</label><input type="text" id="f-cta-hero-btn1-url" value="panganku_v3_full__4_.html"></div>
+          </div>
+        </div>
+        <div class="lp-section-card">
+          <div class="lp-sec-name" style="margin-bottom:14px;"><span class="lp-sec-ico">👻</span> Tombol Sekunder (Hero)</div>
+          <div class="form-grid">
+            <div class="fg"><label>Teks Tombol</label><input type="text" id="f-cta-hero-btn2-text" value="Lihat cara kerjanya"></div>
+            <div class="fg"><label>Anchor / URL</label><input type="text" id="f-cta-hero-btn2-url" value="#cara-kerja"></div>
+          </div>
+        </div>
+        <div class="lp-section-card">
+          <div class="lp-sec-name" style="margin-bottom:14px;"><span class="lp-sec-ico">🚀</span> Tombol CTA Besar (Bagian Bawah)</div>
+          <div class="form-grid">
+            <div class="fg"><label>Judul CTA</label><input type="text" id="f-cta-title" value="Mulai Sekarang, Gratis"></div>
+            <div class="fg"><label>Teks Tombol CTA</label><input type="text" id="f-cta-btn-text" value="🛒 Kunjungi Marketplace PanganKu"></div>
+          </div>
+          <div class="form-grid">
+            <div class="fg"><label>URL Tombol CTA</label><input type="text" id="f-cta-btn-url" value="panganku_v3_full__4_.html"></div>
+            <div class="fg"><label>Catatan Kecil di Bawah Tombol</label><input type="text" id="f-cta-note" value="Gratis untuk pembeli · Gratis daftar untuk petani & UMKM"></div>
+          </div>
+          <div class="fg"><label>Deskripsi CTA</label><textarea id="f-cta-desc">Bergabunglah dengan lebih dari 50.000 pembeli dan 340 petani & UMKM yang sudah merasakan manfaat ekosistem pangan lokal PanganKu.</textarea></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button class="btn btn-out">Batal</button>
+          <button class="btn btn-g" onclick="simpanCTA()">💾 Simpan CTA</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const titles={
+  'sec-lp-konten':'Landing Page › Konten & Teks','sec-lp-stats':'Landing Page › Angka & Statistik',
+  'sec-lp-design':'Landing Page › Tampilan & Warna','sec-lp-cta':'Landing Page › Tombol & CTA'
+};
+const subs={
+  'sec-lp-konten':'Edit teks dan konten di setiap bagian landing page',
+  'sec-lp-stats':'Edit angka statistik yang ditampilkan di landing page',
+  'sec-lp-design':'Atur warna, tampilan, dan visibilitas setiap bagian',
+  'sec-lp-cta':'Edit teks dan URL semua tombol di landing page'
+};
+
+function goSec(nav, secId) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('on'));
+  nav.classList.add('on');
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('on'));
+  const sec = document.getElementById(secId);
+  if (sec) sec.classList.add('on');
+  document.getElementById('topbar-title').textContent = titles[secId] || 'Dashboard';
+  document.getElementById('topbar-sub').textContent = subs[secId] || '';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), 2800);
+}
+
+/* =========================================================
+   PENYIMPANAN LANDING PAGE (localStorage)
+   Kunci ini dibaca ulang oleh landing_page.html
+========================================================= */
+const LP_KEY = 'panganku_lp_data';
+
+function lpGetData() {
+  try {
+    const raw = localStorage.getItem(LP_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.error('Gagal membaca data landing page:', e);
+    return {};
+  }
+}
+
+function lpSaveData(partial) {
+  try {
+    const current = lpGetData();
+    const merged = Object.assign({}, current, partial);
+    localStorage.setItem(LP_KEY, JSON.stringify(merged));
+    return true;
+  } catch (e) {
+    console.error('Gagal menyimpan data landing page:', e);
+    return false;
+  }
+}
+
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+function simpanKonten() {
+  const ok = lpSaveData({
+    hero: {
+      title: val('f-hero-title'),
+      badge: val('f-hero-badge'),
+      desc: val('f-hero-desc'),
+      btn1Text: val('f-hero-btn1-text'),
+      btn1Url: val('f-hero-btn1-url'),
+      btn2Text: val('f-hero-btn2-text'),
+      btn2Url: val('f-hero-btn2-url')
+    },
+    problem: {
+      title: val('f-problem-title'),
+      p1: val('f-problem-p1'),
+      p2: val('f-problem-p2')
+    },
+    fitur: {
+      title: val('f-fitur-title'),
+      desc: val('f-fitur-desc')
+    }
+  });
+  toast(ok ? '✅ Konten landing page berhasil disimpan!' : '❌ Gagal menyimpan, coba lagi.');
+}
+
+function simpanStats() {
+  const ok = lpSaveData({
+    stats: {
+      num1: val('f-stat-num-1'), lbl1: val('f-stat-lbl-1'),
+      num2: val('f-stat-num-2'), lbl2: val('f-stat-lbl-2'),
+      num3: val('f-stat-num-3'), lbl3: val('f-stat-lbl-3'),
+      num4: val('f-stat-num-4'), lbl4: val('f-stat-lbl-4')
+    }
+  });
+  toast(ok ? '✅ Statistik berhasil disimpan!' : '❌ Gagal menyimpan, coba lagi.');
+}
+
+function simpanWarna() {
+  const ok = lpSaveData({
+    colors: {
+      primary: val('f-color-primary-txt'),
+      accent: val('f-color-accent-txt'),
+      bg: val('f-color-bg-txt')
+    }
+  });
+  toast(ok ? '✅ Warna berhasil diperbarui!' : '❌ Gagal menyimpan, coba lagi.');
+}
+
+function simpanVisibilitas() {
+  const ok = lpSaveData({
+    visibility: {
+      hero: document.getElementById('f-vis-hero').checked,
+      statsbar: document.getElementById('f-vis-statsbar').checked,
+      masalah: document.getElementById('f-vis-masalah').checked,
+      fitur: document.getElementById('f-vis-fitur').checked,
+      carakerja: document.getElementById('f-vis-carakerja').checked,
+      siapa: document.getElementById('f-vis-siapa').checked,
+      testimoni: document.getElementById('f-vis-testimoni').checked,
+      cta: document.getElementById('f-vis-cta').checked
+    }
+  });
+  if (ok) toast('✅ Visibilitas bagian diperbarui!');
+}
+
+function simpanCTA() {
+  const ok = lpSaveData({
+    heroButtons: {
+      btn1Text: val('f-cta-hero-btn1-text'),
+      btn1Url: val('f-cta-hero-btn1-url'),
+      btn2Text: val('f-cta-hero-btn2-text'),
+      btn2Url: val('f-cta-hero-btn2-url')
+    },
+    cta: {
+      title: val('f-cta-title'),
+      desc: val('f-cta-desc'),
+      btnText: val('f-cta-btn-text'),
+      btnUrl: val('f-cta-btn-url'),
+      note: val('f-cta-note')
+    }
+  });
+  toast(ok ? '✅ Tombol & CTA berhasil disimpan!' : '❌ Gagal menyimpan, coba lagi.');
+}
+
+// Saat dashboard dibuka, isi ulang form dengan data yang terakhir disimpan
+// (supaya admin tahu apa yang sedang aktif di landing page, bukan cuma nilai default)
+function lpLoadIntoForm() {
+  const d = lpGetData();
+  if (!d || Object.keys(d).length === 0) return;
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
+  const setChecked = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.checked = v; };
+
+  if (d.hero) {
+    set('f-hero-title', d.hero.title); set('f-hero-badge', d.hero.badge); set('f-hero-desc', d.hero.desc);
+    set('f-hero-btn1-text', d.hero.btn1Text); set('f-hero-btn1-url', d.hero.btn1Url);
+    set('f-hero-btn2-text', d.hero.btn2Text); set('f-hero-btn2-url', d.hero.btn2Url);
+  }
+  if (d.problem) { set('f-problem-title', d.problem.title); set('f-problem-p1', d.problem.p1); set('f-problem-p2', d.problem.p2); }
+  if (d.fitur) { set('f-fitur-title', d.fitur.title); set('f-fitur-desc', d.fitur.desc); }
+  if (d.stats) {
+    set('f-stat-num-1', d.stats.num1); set('f-stat-lbl-1', d.stats.lbl1);
+    set('f-stat-num-2', d.stats.num2); set('f-stat-lbl-2', d.stats.lbl2);
+    set('f-stat-num-3', d.stats.num3); set('f-stat-lbl-3', d.stats.lbl3);
+    set('f-stat-num-4', d.stats.num4); set('f-stat-lbl-4', d.stats.lbl4);
+  }
+  if (d.colors) {
+    set('f-color-primary', d.colors.primary); set('f-color-primary-txt', d.colors.primary);
+    set('f-color-accent', d.colors.accent); set('f-color-accent-txt', d.colors.accent);
+    set('f-color-bg', d.colors.bg); set('f-color-bg-txt', d.colors.bg);
+  }
+  if (d.visibility) {
+    setChecked('f-vis-hero', d.visibility.hero); setChecked('f-vis-statsbar', d.visibility.statsbar);
+    setChecked('f-vis-masalah', d.visibility.masalah); setChecked('f-vis-fitur', d.visibility.fitur);
+    setChecked('f-vis-carakerja', d.visibility.carakerja); setChecked('f-vis-siapa', d.visibility.siapa);
+    setChecked('f-vis-testimoni', d.visibility.testimoni); setChecked('f-vis-cta', d.visibility.cta);
+  }
+  if (d.cta) { set('f-cta-title', d.cta.title); set('f-cta-desc', d.cta.desc); set('f-cta-btn-text', d.cta.btnText); set('f-cta-btn-url', d.cta.btnUrl); set('f-cta-note', d.cta.note); }
+  if (d.heroButtons) { set('f-cta-hero-btn1-text', d.heroButtons.btn1Text); set('f-cta-hero-btn1-url', d.heroButtons.btn1Url); set('f-cta-hero-btn2-text', d.heroButtons.btn2Text); set('f-cta-hero-btn2-url', d.heroButtons.btn2Url); }
+}
+lpLoadIntoForm();
+</script>
+</body>
+</html>
